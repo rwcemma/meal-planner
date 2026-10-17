@@ -286,3 +286,8 @@ function getProtocol(name) {
 function getIncompatiblePairs(selectedNames) {
   return INCOMPATIBLE_PROTOCOLS.filter(([a, b]) => selectedNames.includes(a) && selectedNames.includes(b));
 }
+
+// Also loadable by the Netlify Functions (prompt building + validation); ignored in the browser.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { PROTOCOLS, INCOMPATIBLE_PROTOCOLS, getProtocol, getIncompatiblePairs };
+}

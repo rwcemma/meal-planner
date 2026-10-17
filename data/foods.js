@@ -226,3 +226,8 @@ function getCategoryItems(category) {
 function getAllFoodNames() {
   return [...new Set(FOOD_CATEGORIES.flatMap(getCategoryItems))];
 }
+
+// Also loadable by the Netlify Functions (server-side validation); ignored in the browser.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { FOOD_CATEGORIES, getCategoryItems, getAllFoodNames };
+}

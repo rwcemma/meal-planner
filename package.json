@@ -1,0 +1,15 @@
+{
+  "name": "rwc-meal-planner",
+  "private": true,
+  "description": "RWC Meal Plan Generator — Redefining Wellness Center",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "@netlify/blobs": "^11.1.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
