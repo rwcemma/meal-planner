@@ -153,6 +153,7 @@ button { cursor: pointer; }
 .screen-viewport {
   position: relative;
   overflow-x: hidden;
+  overflow-x: clip; /* clip (not hidden) so position: sticky still works inside */
   min-height: calc(100vh - var(--header-h) - var(--progress-h));
 }
 
@@ -160,6 +161,9 @@ button { cursor: pointer; }
   width: 100%;
   outline: none;
 }
+
+/* Headings receive programmatic focus after each transition (for screen readers) */
+[tabindex="-1"]:focus { outline: none; }
 
 /* During a transition the outgoing screen is pinned on top of the incoming one */
 .screen.is-leaving {
@@ -311,13 +315,6 @@ button { cursor: pointer; }
 }
 
 .hero__content { max-width: 680px; }
-
-.hero__logo {
-  height: 48px;
-  width: auto;
-  margin: 0 auto 28px;
-  filter: brightness(0) invert(1);
-}
 
 .hero__eyebrow {
   font-size: 14px;
@@ -547,6 +544,8 @@ button { cursor: pointer; }
 
 @keyframes pop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+.protocol-warning { margin-top: 20px; }
+
 .selection-count {
   text-align: center;
   font-size: 16px;
@@ -561,6 +560,7 @@ button { cursor: pointer; }
 .category-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-flow: row dense; /* backfill gaps left when an open card spans the row */
   gap: 16px;
   align-items: start;
 }
