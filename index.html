@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RWC Meal Plan Generator</title>
+  <meta name="description" content="Personalized 7-day meal plans from Redefining Wellness Center — Dr. Jaban Moore, DC." />
+  <link rel="icon" type="image/svg+xml" href="assets/logo-placeholder.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Persistent header (hidden on Screen 0 and Screen 9 via JS) -->
+  <header class="app-header" id="appHeader" hidden>
+    <div class="app-header__inner">
+      <div class="app-header__left">
+        <img src="assets/logo-placeholder.svg" alt="Redefining Wellness Center" class="app-header__logo" />
+      </div>
+      <h1 class="app-header__title" id="stepTitle" aria-live="polite"></h1>
+      <div class="app-header__right">
+        <button type="button" class="back-btn" id="backBtn" aria-label="Go back" hidden>
+          <span aria-hidden="true">←</span>
+        </button>
+      </div>
+    </div>
+    <div class="progress" id="progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="progress__fill" id="progressFill"></div>
+    </div>
+  </header>
+
+  <!-- Every screen renders into this container; app.js swaps content and animates transitions -->
+  <main class="screen-viewport" id="screenViewport">
+    <section class="screen" id="screen" tabindex="-1"></section>
+  </main>
+
+  <noscript>
+    <p style="padding:24px;font-family:Poppins,Arial,sans-serif;font-size:18px;">
+      This meal plan generator requires JavaScript. Please enable it and reload the page.
+    </p>
+  </noscript>
+
+  <!-- PDF libraries (must load before pdf.js) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- App data -->
+  <script src="data/foods.js"></script>
+  <script src="data/protocols.js"></script>
+
+  <!-- App modules (app.js last — it boots the quiz) -->
+  <script src="generate.js"></script>
+  <script src="pdf.js"></script>
+  <script src="email.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
