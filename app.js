@@ -45,8 +45,8 @@ const COPY = {
     basicHeadline: name => `A bit about ${name}`,
     skillSub: 'This shapes how complex the recipes will be.',
     restrictSub: name => `Check anything ${name} can't eat — even if it's normally allowed on their protocol. Leave everything unchecked if none.`,
-    genHeadline: name => `Building ${name}'s meal plan…`,
-    deliveryHeadline: name => `Ready! Let's get this to ${name}.`
+    genHeadline: name => `Building <span class="accent">${name}'s</span> meal plan…`,
+    deliveryHeadline: name => `Ready! Let's get this to <span class="accent">${name}.</span>`
   },
   client: {
     heroSub: "Answer a few quick questions and we'll build a 7-day meal plan designed around your unique health needs.",
@@ -55,8 +55,8 @@ const COPY = {
     basicHeadline: name => `A bit about you, ${name}`,
     skillSub: "We'll match recipes to your comfort in the kitchen.",
     restrictSub: () => "Check anything you can't eat — even if it's normally allowed on your protocol. Leave everything unchecked if none.",
-    genHeadline: name => `Building ${name}'s meal plan…`,
-    deliveryHeadline: name => `Ready! Your plan is here, ${name}.`
+    genHeadline: name => `Building <span class="accent">${name}'s</span> meal plan…`,
+    deliveryHeadline: name => `Ready! Your plan is here, <span class="accent">${name}.</span>`
   }
 };
 
@@ -179,10 +179,10 @@ const SCREENS = [
     render: () => `
       <div class="hero">
         <div class="hero__content">
-          <p class="hero__eyebrow">Redefining Wellness Center</p>
-          <h1 class="hero__title" tabindex="-1">Your personalized meal plan starts here.</h1>
+          <p class="eyebrow hero__eyebrow">Redefining Wellness Center</p>
+          <h1 class="hero__title" tabindex="-1">Your personalized meal plan <span class="accent">starts here.</span></h1>
           <p class="hero__sub">${copy().heroSub}</p>
-          <button type="button" class="btn btn--white btn--lg" data-action="continue">Get Started →</button>
+          <button type="button" class="btn btn--primary btn--lg" data-action="continue">Get Started →</button>
           <p class="hero__note">Takes about 2 minutes</p>
         </div>
       </div>`,
@@ -1047,8 +1047,42 @@ function bindResults(el) {
     }
   });
 
-  emailBtn.addEventListener('click', () => {
-    $('#emailStatus', el).innerHTML = statusAlert('info', 'Email delivery is connected in Step 13.');
+  emailBtn.addEventListener('click', async () => {
+    const status = $('#emailStatus', el);
+    const email = emailInput.value.trim();
+    if (!isValidEmail(email)) {
+      emailInput.setAttribute('aria-invalid', 'true');
+      $('#deliveryEmailError', el).textContent = 'Please enter a valid email address.';
+      emailInput.focus();
+      return;
+    }
+
+    setButtonBusy(emailBtn, true, 'Sending…');
+    status.innerHTML = '';
+    try {
+      const pdfBase64 = await generatePDF(state.planData, pdfClientInfo(), pdfSettings({ download: false }));
+      await sendPlanEmail({
+        clientName: state.clientName,
+        clientEmail: email,
+        dietProtocols: [...state.protocols],
+        cookingSkill: state.cookingSkill,
+        cookingTime: state.cookingTime,
+        servings: state.servings,
+        generatedDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        pdfBase64,
+        mode: state.mode
+      });
+      state.planDelivered = true;
+      saveState();
+      status.innerHTML = statusAlert('success', `Sent to ${esc(email)}`);
+      setButtonBusy(emailBtn, false);
+      emailBtn.innerHTML = '📧 Send again';
+    } catch (err) {
+      console.error(err);
+      status.innerHTML = statusAlert('error', esc(err.message || "The email couldn't be sent."));
+      setButtonBusy(emailBtn, false);
+      emailBtn.innerHTML = '📧 Retry sending';
+    }
   });
 
   $('[data-action="download"]', el).addEventListener('click', async event => {
