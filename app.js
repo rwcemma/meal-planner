@@ -27,7 +27,8 @@ function initialState() {
     servings: null,        // current serving count, adjustable 1–8 on Screen 10
     planData: null,        // assembled after generation
     generationError: null,
-    planDelivered: false   // set once the plan is emailed or downloaded
+    planDelivered: false,  // set once the plan is emailed or downloaded
+    groceryChecked: {}     // { 'Proteins::0': true } — shopping checkboxes on Screen 10
   };
 }
 
@@ -673,6 +674,8 @@ async function runGeneration(el) {
 
     state.planData = planData;
     state.servings = state.baseServings;
+    state.groceryChecked = {};
+    activeTab = 0;
     state.planDelivered = false;
     saveState();
     goToScreen(10);
@@ -689,8 +692,271 @@ async function runGeneration(el) {
 }
 
 /* ==========================================================================
-   Screen 10 — preview & delivery (preview rendering arrives in Build step 9)
+   Screen 10 — serving scaler
+   Recipes are written for state.baseServings; quantities are rescaled client-side
+   for state.servings (1–8). Macros are per serving, so they never scale.
    ========================================================================== */
+const MIN_SERVINGS = 1;
+const MAX_SERVINGS = 8;
+
+const UNICODE_FRACTIONS = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3, '⅛': 0.125, '⅜': 0.375, '⅝': 0.625, '⅞': 0.875 };
+
+// One quantity: "1 1/2", "1½", "1/2", "½", "1.5", "2"
+const QTY = String.raw`(?:\d+\s+\d+\/\d+|\d*\s?[½¼¾⅓⅔⅛⅜⅝⅞]|\d+\/\d+|\d+(?:\.\d+)?)`;
+// Optional range: "2-3", "2 – 3", "2 to 3"
+const QTY_RANGE = new RegExp(String.raw`(${QTY})(\s*(?:-|–|to)\s*)?(${QTY})?`);
+const LEADING_QTY = new RegExp(String.raw`^(\s*)` + QTY_RANGE.source);
+
+function parseQuantity(text) {
+  text = text.trim();
+  const unicode = text.match(/^(\d*)\s?([½¼¾⅓⅔⅛⅜⅝⅞])$/);
+  if (unicode) return Number(unicode[1] || 0) + UNICODE_FRACTIONS[unicode[2]];
+  const mixed = text.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+  if (mixed) return Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
+  const fraction = text.match(/^(\d+)\/(\d+)$/);
+  if (fraction) return Number(fraction[1]) / Number(fraction[2]);
+  return parseFloat(text);
+}
+
+// Kitchen-friendly output: whole numbers, common fractions, else one decimal
+function formatQuantity(value) {
+  const whole = Math.floor(value + 1e-9);
+  const rest = value - whole;
+  const fractions = [[0, ''], [1 / 8, '1/8'], [1 / 4, '1/4'], [1 / 3, '1/3'], [3 / 8, '3/8'], [1 / 2, '1/2'],
+    [5 / 8, '5/8'], [2 / 3, '2/3'], [3 / 4, '3/4'], [7 / 8, '7/8'], [1, '']];
+  const [nearest, label] = fractions.reduce((best, f) => (Math.abs(f[0] - rest) < Math.abs(best[0] - rest) ? f : best));
+  if (Math.abs(nearest - rest) > 0.04) return String(Math.round(value * 10) / 10);
+  const wholePart = nearest === 1 ? whole + 1 : whole;
+  if (!label) return String(wholePart);
+  return wholePart ? `${wholePart} ${label}` : label;
+}
+
+function scaleMatch(match, factor) {
+  const [, lead = '', first, separator, second] = match;
+  let out = lead + formatQuantity(parseQuantity(first) * factor);
+  if (separator && second) out += separator + formatQuantity(parseQuantity(second) * factor);
+  return out;
+}
+
+// "1 1/2 lbs ground beef" ×2 → "3 lbs ground beef". No leading number → unchanged.
+function scaleIngredient(ingredient, factor) {
+  if (factor === 1) return ingredient;
+  const match = ingredient.match(LEADING_QTY);
+  if (!match || !/\d|[½¼¾⅓⅔⅛⅜⅝⅞]/.test(match[0])) return ingredient;
+  return scaleMatch(match, factor) + ingredient.slice(match[0].length);
+}
+
+// Grocery lines look like "Wild-caught salmon — 2 lbs for the week": scale the first
+// quantity after the dash, or a leading quantity, else leave the line unchanged.
+function scaleGroceryItem(item, factor) {
+  if (factor === 1) return item;
+  const dash = item.match(/\s[—–-]\s/);
+  if (dash) {
+    const head = item.slice(0, dash.index + dash[0].length);
+    const tail = item.slice(dash.index + dash[0].length);
+    const match = tail.match(QTY_RANGE);
+    if (match && match.index === tail.search(/\d|[½¼¾⅓⅔⅛⅜⅝⅞]/)) {
+      const scaled = scaleMatch([match[0], '', match[1], match[2], match[3]], factor);
+      return head + tail.slice(0, match.index) + scaled + tail.slice(match.index + match[0].length);
+    }
+    return item;
+  }
+  return scaleIngredient(item, factor);
+}
+
+const servingFactor = () => (state.servings || state.baseServings || 1) / (state.baseServings || 1);
+
+/* ==========================================================================
+   Screen 10 — preview & delivery
+   ========================================================================== */
+const DAY_TABS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+const MEAL_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' };
+const SKILL_DOTS = { Beginner: 1, Intermediate: 2, Advanced: 3 };
+
+let activeTab = 0; // 0–6 = Monday–Sunday, 'grocery' = grocery list
+
+const hasPlan = () => Array.isArray(state.planData?.days) && state.planData.days.length === 7;
+
+function skillIndicator() {
+  const level = SKILL_DOTS[state.cookingSkill] || 1;
+  const dots = '●'.repeat(level) + '○'.repeat(3 - level);
+  return `<span class="pill pill--teal"><span aria-hidden="true">${dots}</span> ${esc(state.cookingSkill)}</span>`;
+}
+
+function renderMeal(slot, meal, factor) {
+  return `
+    <article class="meal-card">
+      <div class="meal-card__label">${MEAL_LABELS[slot] || esc(slot)}</div>
+      <h3 class="meal-card__name">${esc(meal.name)}</h3>
+      <div class="meta-row">
+        <span class="pill">⏱ Prep ${esc(meal.prep_time)}</span>
+        <span class="pill">🔥 Cook ${esc(meal.cook_time)}</span>
+        <span class="pill">🍽 Serves ${state.servings}</span>
+        ${skillIndicator()}
+      </div>
+      <h4 class="section-title">Ingredients</h4>
+      <ul class="ingredient-list">
+        ${meal.ingredients.map(item => `<li>${esc(scaleIngredient(item, factor))}</li>`).join('')}
+      </ul>
+      <h4 class="section-title">Instructions</h4>
+      <ol class="instruction-list">
+        ${meal.instructions.map(step => `<li>${esc(step)}</li>`).join('')}
+      </ol>
+      <div class="macro-row" aria-label="Macros per serving">
+        <span class="macro-pill">P <b>${meal.protein_g}g</b></span>
+        <span class="macro-pill">F <b>${meal.fat_g}g</b></span>
+        <span class="macro-pill">C <b>${meal.carbs_g}g</b></span>
+        <span class="macro-pill"><b>${meal.calories}</b> cal</span>
+        <span class="macro-row__note">per serving</span>
+      </div>
+    </article>`;
+}
+
+function renderDay(day) {
+  const factor = servingFactor();
+  return `
+    <h3 class="sr-only">${esc(day.day)}</h3>
+    ${Object.entries(day.meals).map(([slot, meal]) => renderMeal(slot, meal, factor)).join('')}
+    <div class="daily-totals">
+      <span class="daily-totals__label">Daily totals</span>
+      <span>P ${day.daily_protein_g}g</span>
+      <span>F ${day.daily_fat_g}g</span>
+      <span>C ${day.daily_carbs_g}g</span>
+      <span>${day.daily_calories.toLocaleString()} cal</span>
+      <span class="daily-totals__note">per person</span>
+    </div>`;
+}
+
+function renderGrocery() {
+  const factor = servingFactor();
+  const checked = state.groceryChecked || {};
+  const categories = Object.entries(state.planData.grocery_list || {}).filter(([, items]) => items.length);
+  return `
+    <h3 class="sr-only">Weekly grocery list</h3>
+    <p class="grocery-intro">Quantities for ${state.servings} serving${state.servings === 1 ? '' : 's'} per meal. Tap items to check them off while you shop.</p>
+    <div class="grocery-grid">
+      ${categories.map(([category, items]) => `
+        <div class="grocery-cat">
+          <h4 class="grocery-cat__title">${esc(category)}</h4>
+          ${items.map((item, i) => {
+            const key = `${category}::${i}`;
+            return `
+              <label class="grocery-item">
+                <input type="checkbox" data-grocery="${esc(key)}" ${checked[key] ? 'checked' : ''} />
+                <span>${esc(scaleGroceryItem(item, factor))}</span>
+              </label>`;
+          }).join('')}
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderPlanPanel() {
+  if (!hasPlan()) {
+    return statusAlert('error', 'This plan has no recipes to show. Use “Build another plan” to generate a new one.');
+  }
+  return activeTab === 'grocery' ? renderGrocery() : renderDay(state.planData.days[activeTab]);
+}
+
+function renderPreview() {
+  if (!hasPlan()) return renderPlanPanel();
+  const restrictions = restrictedFoods();
+  return `
+    <div class="preview-toolbar">
+      <div class="servings-control" role="group" aria-label="Servings per meal">
+        <span id="servingsLabel">Servings:</span>
+        <button type="button" class="stepper-btn" data-servings="-1" aria-label="Fewer servings"
+                ${state.servings <= MIN_SERVINGS ? 'disabled' : ''}>−</button>
+        <span class="servings-control__value" id="servingsValue" aria-live="polite" aria-labelledby="servingsLabel">${state.servings}</span>
+        <button type="button" class="stepper-btn" data-servings="1" aria-label="More servings"
+                ${state.servings >= MAX_SERVINGS ? 'disabled' : ''}>+</button>
+      </div>
+      <span class="preview-toolbar__note">Ingredient amounts adjust · macros are per serving</span>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Plan days">
+      ${DAY_TABS.map((label, i) => `
+        <button type="button" class="tab" role="tab" id="tab-${i}" data-tab="${i}" aria-controls="planPanel"
+                aria-selected="${activeTab === i}" tabindex="${activeTab === i ? 0 : -1}"
+                aria-label="${esc(state.planData.days[i].day)}">${label}</button>`).join('')}
+      <button type="button" class="tab tab--grocery" role="tab" id="tab-grocery" data-tab="grocery" aria-controls="planPanel"
+              aria-selected="${activeTab === 'grocery'}" tabindex="${activeTab === 'grocery' ? 0 : -1}">🛒 Grocery List</button>
+    </div>
+
+    <div id="planPanel" role="tabpanel" aria-labelledby="tab-${activeTab}">${renderPlanPanel()}</div>
+
+    ${state.planData.protocol_notes ? `
+      <div class="protocol-notes">
+        <strong>Protocol notes:</strong> ${esc(state.planData.protocol_notes)}
+      </div>` : ''}
+    ${restrictions.length ? `
+      <div class="restriction-notes">
+        <strong>Avoiding:</strong> ${restrictions.map(esc).join(', ')}
+      </div>` : ''}`;
+}
+
+function bindPreview(el) {
+  const preview = $('#planPreview', el);
+  if (!preview || !hasPlan()) return;
+
+  const refreshPanel = () => {
+    $('#planPanel', el).innerHTML = renderPlanPanel();
+    $('#planPanel', el).setAttribute('aria-labelledby', `tab-${activeTab}`);
+  };
+
+  const selectTab = (tab, focus = false) => {
+    activeTab = tab;
+    $$('.tab', el).forEach(btn => {
+      const selected = btn.dataset.tab === String(tab);
+      btn.setAttribute('aria-selected', selected);
+      btn.tabIndex = selected ? 0 : -1;
+      if (selected && focus) btn.focus();
+    });
+    refreshPanel();
+  };
+
+  preview.addEventListener('click', event => {
+    const tab = event.target.closest('.tab');
+    if (tab) {
+      selectTab(tab.dataset.tab === 'grocery' ? 'grocery' : Number(tab.dataset.tab));
+      return;
+    }
+
+    const stepper = event.target.closest('[data-servings]');
+    if (stepper) {
+      const next = Math.min(MAX_SERVINGS, Math.max(MIN_SERVINGS, state.servings + Number(stepper.dataset.servings)));
+      if (next === state.servings) return;
+      state.servings = next;
+      saveState();
+      $('#servingsValue', el).textContent = next;
+      $('[data-servings="-1"]', el).disabled = next <= MIN_SERVINGS;
+      $('[data-servings="1"]', el).disabled = next >= MAX_SERVINGS;
+      refreshPanel();
+    }
+  });
+
+  // Arrow keys move between tabs (WAI-ARIA tabs pattern)
+  $('.tabs', el).addEventListener('keydown', event => {
+    const order = [...DAY_TABS.keys(), 'grocery'];
+    const index = order.indexOf(activeTab);
+    let next = null;
+    if (event.key === 'ArrowRight') next = order[(index + 1) % order.length];
+    if (event.key === 'ArrowLeft') next = order[(index - 1 + order.length) % order.length];
+    if (event.key === 'Home') next = order[0];
+    if (event.key === 'End') next = order[order.length - 1];
+    if (next !== null) {
+      event.preventDefault();
+      selectTab(next, true);
+    }
+  });
+
+  preview.addEventListener('change', event => {
+    const box = event.target.closest('[data-grocery]');
+    if (!box) return;
+    state.groceryChecked = { ...(state.groceryChecked || {}), [box.dataset.grocery]: box.checked };
+    saveState();
+  });
+}
+
 function renderResults() {
   return `
     <div class="screen__inner screen__inner--wide">
@@ -702,12 +968,7 @@ function renderResults() {
             <span class="pill">${esc(state.cookingSkill)}</span>
             <span class="pill">${esc(state.cookingTime)}</span>
           </div>
-          <div id="planPreview">
-            <div class="alert alert--info">
-              <span class="alert__icon" aria-hidden="true">ℹ</span>
-              <span>The plan preview (day tabs, recipes, grocery list and servings scaler) is built in Step 9.</span>
-            </div>
-          </div>
+          <div id="planPreview">${renderPreview()}</div>
         </section>
 
         <aside class="panel delivery-card" aria-label="Deliver the plan">
@@ -737,6 +998,8 @@ function statusAlert(type, message) {
 }
 
 function bindResults(el) {
+  bindPreview(el);
+
   const emailInput = $('#deliveryEmail', el);
   const emailBtn = $('[data-action="email"]', el);
 
@@ -765,6 +1028,7 @@ function bindResults(el) {
 function resetApp() {
   generationRun++; // cancel any in-flight generation
   openCategory = null;
+  activeTab = 0;
   state = initialState();
   try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) { /* storage unavailable */ }
   goToScreen(0, 'back', { force: true });

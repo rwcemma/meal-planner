@@ -1015,6 +1015,21 @@ button { cursor: pointer; }
 }
 .tab--grocery { margin-left: auto; }
 
+.preview-toolbar__note,
+.macro-row__note,
+.daily-totals__note {
+  font-size: 14px;
+  color: var(--muted);
+}
+.macro-row__note { align-self: center; }
+.daily-totals__note { margin-left: auto; }
+
+.grocery-intro {
+  font-size: 16px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
 /* Meal card */
 .meal-card {
   padding: 22px 0;
@@ -1136,6 +1151,15 @@ button { cursor: pointer; }
   color: var(--muted);
 }
 
+.restriction-notes {
+  margin-top: 12px;
+  padding: 16px 20px;
+  border-left: 4px solid var(--red);
+  background: var(--red-light);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  font-size: 16px;
+}
+
 .protocol-notes {
   margin-top: 20px;
   padding: 16px 20px;
@@ -1211,6 +1235,9 @@ button { cursor: pointer; }
   .divider-or,
   .grocery-cat__title,
   .daily-totals__label,
+  .preview-toolbar__note,
+  .macro-row__note,
+  .daily-totals__note,
   .tab { font-size: 16px; }
 
   .app-header__logo { height: 30px; }
@@ -1238,6 +1265,15 @@ button { cursor: pointer; }
   .screen-actions .btn--primary { width: 100%; }
 
   .preview-panel { padding: 16px; }
+
+  /* All 8 tabs visible on phones: two rows of four instead of a hidden scroll */
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow-x: visible;
+  }
+  .tab { padding: 10px 4px; }
+  .tab--grocery { margin-left: 0; grid-column: 1 / -1; }
   .gen__title { font-size: 26px; }
   .gen-steps { padding: 18px 20px; }
 }
