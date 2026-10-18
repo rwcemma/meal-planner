@@ -76,6 +76,7 @@ npx netlify dev         # http://localhost:8888
 ## Notes
 
 - jsPDF-AutoTable still loads from cdnjs as the original spec asked, but the PDF layout is drawn directly to match the site. You can remove that script tag from `index.html`.
-- `assets/logo-placeholder.svg` is a placeholder. Replace it with the real logo.
+- Logo files: `assets/rwc-logo.png` (color), `assets/rwc-logo-white.png` (for navy backgrounds), `assets/rwc-mark.png` (favicon).
+- `GET /api/health` reports whether `ANTHROPIC_API_KEY` works and whether `ZAPIER_WEBHOOK_URL` is set (status words only, no secrets).
 - The disclaimer on the last PDF page is in `pdf.js` (`drawNotes`); have it reviewed.
 - Fonts are © their authors and used under the SIL Open Font License (`assets/fonts/OFL-*.txt`).

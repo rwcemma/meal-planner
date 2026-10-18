@@ -150,7 +150,7 @@ button { cursor: pointer; }
 }
 
 .app-header__left { justify-self: start; }
-.app-header__logo { height: 36px; width: auto; }
+.app-header__logo { height: 40px; width: auto; }
 
 .app-header__title {
   justify-self: center;
@@ -366,6 +366,12 @@ button { cursor: pointer; }
 }
 
 .hero__content { max-width: 680px; }
+
+.hero__logo {
+  height: 72px;
+  width: auto;
+  margin: 0 auto 32px;
+}
 
 .hero__eyebrow {
   font-size: 14px;
@@ -1298,7 +1304,8 @@ button { cursor: pointer; }
   .daily-totals__note,
   .tab { font-size: 16px; }
 
-  .app-header__logo { height: 30px; }
+  .app-header__logo { height: 32px; }
+  .hero__logo { height: 56px; margin-bottom: 24px; }
   .app-header__title { max-width: 46vw; }
 
   .screen__inner { padding: 32px var(--gutter) 48px; }

@@ -179,6 +179,7 @@ const SCREENS = [
     render: () => `
       <div class="hero">
         <div class="hero__content">
+          <img src="assets/rwc-logo-white.png" alt="Redefining Wellness Centers" class="hero__logo" width="200" height="72" />
           <p class="eyebrow hero__eyebrow">Redefining Wellness Center</p>
           <h1 class="hero__title" tabindex="-1">Your personalized meal plan <span class="accent">starts here.</span></h1>
           <p class="hero__sub">${copy().heroSub}</p>

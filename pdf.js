@@ -57,7 +57,11 @@ const PDF_FALLBACK_FONTS = {
 
 const PDF_MEAL_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' };
 
+const PDF_LOGOS = { color: 'assets/rwc-logo.png', white: 'assets/rwc-logo-white.png' };
+const PDF_LOGO_RATIO = 323 / 900; // height / width of the logo files
+
 let pdfFontData = null; // [[name, file, base64], ...] cached after first load
+let pdfLogoData = null; // { color, white } data URLs, cached after first load
 
 /* ==========================================================================
    Public API
@@ -70,11 +74,12 @@ async function generatePDF(planData, clientInfo, settings = {}) {
     throw new Error('There is no complete plan to export yet.');
   }
 
-  const fontsLoaded = await loadPdfFonts();
+  const [fontsLoaded, logos] = await Promise.all([loadPdfFonts(), loadPdfLogos()]);
   const doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'letter', compress: true });
   if (fontsLoaded) registerPdfFonts(doc);
 
   const ctx = createPdfContext(doc, planData, clientInfo, settings, fontsLoaded);
+  ctx.logos = logos;
 
   drawCover(ctx);
   planData.days.forEach((day, index) => drawDay(ctx, day, index));
@@ -126,6 +131,22 @@ async function loadPdfFonts() {
     pdfFontData = null;
     return false;
   }
+}
+
+async function loadPdfLogos() {
+  if (pdfLogoData) return pdfLogoData;
+  try {
+    const entries = await Promise.all(Object.entries(PDF_LOGOS).map(async ([key, url]) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`${url}: ${response.status}`);
+      return [key, `data:image/png;base64,${arrayBufferToBase64(await response.arrayBuffer())}`];
+    }));
+    pdfLogoData = Object.fromEntries(entries);
+  } catch (err) {
+    console.warn('[pdf] logo unavailable', err);
+    pdfLogoData = {};
+  }
+  return pdfLogoData;
 }
 
 function registerPdfFonts(doc) {
@@ -324,7 +345,13 @@ function drawPageFooters(ctx) {
     const y = PDF_PAGE.height - 24;
     ctx.stroke(PDF_COLORS.border, 0.6);
     doc.line(PDF_PAGE.margin, y - 11, PDF_PAGE.width - PDF_PAGE.margin, y - 11);
-    ctx.text('Dr. Jaban Moore, DC  ·  drjabanmoore.com', PDF_PAGE.margin, y, { font: 'Poppins-Light', size: 7.5, color: PDF_COLORS.muted });
+    let fx = PDF_PAGE.margin;
+    if (ctx.logos.color) {
+      const logoH = 15;
+      doc.addImage(ctx.logos.color, 'PNG', fx, y - 11, logoH / PDF_LOGO_RATIO, logoH, 'logo-color', 'FAST');
+      fx += logoH / PDF_LOGO_RATIO + 10;
+    }
+    ctx.text('Dr. Jaban Moore, DC  ·  drjabanmoore.com', fx, y, { font: 'Poppins-Light', size: 7.5, color: PDF_COLORS.muted });
     ctx.text(`${pdfText(ctx.client.name)}'s 7-Day Meal Plan  ·  Page ${page} of ${total}`, PDF_PAGE.width - PDF_PAGE.margin, y,
       { font: 'Poppins-Light', size: 7.5, color: PDF_COLORS.muted, align: 'right' });
   }
@@ -340,6 +367,11 @@ function drawCover(ctx) {
 
   ctx.image('cover', () => navyPanelImage(W, H, { scale: 1.5 }), 0, 0, W, H);
   ctx.image('strip', () => tealStripImage(W, 5), 0, 0, W, 5);
+
+  if (ctx.logos.white) {
+    const logoW = 190;
+    doc.addImage(ctx.logos.white, 'PNG', cx - logoW / 2, 150, logoW, logoW * PDF_LOGO_RATIO, 'logo-white', 'FAST');
+  }
 
   let y = 268;
   ctx.eyebrow('Redefining Wellness Center', cx, y, { align: 'center', size: 8.5 });
