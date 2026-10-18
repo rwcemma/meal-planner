@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="160" height="40" viewBox="0 0 160 40" role="img" aria-label="Redefining Wellness Center">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#04979c"/>
-      <stop offset="1" stop-color="#00c4cc"/>
+      <stop offset="0" stop-color="#040e68"/>
+      <stop offset="1" stop-color="#0a1fa8"/>
     </linearGradient>
   </defs>
   <circle cx="20" cy="20" r="18" fill="url(#g)"/>
-  <path d="M12 22c4-8 12-10 16-10-1 8-6 15-14 15" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-  <text x="46" y="27" font-family="Poppins, Arial, sans-serif" font-size="20" font-weight="700" fill="#04979c">RWC</text>
+  <path d="M12 22c4-8 12-10 16-10-1 8-6 15-14 15" fill="none" stroke="#00c4cc" stroke-width="2.5" stroke-linecap="round"/>
+  <text x="46" y="27" font-family="Poppins, Arial, sans-serif" font-size="20" font-weight="800" fill="#0d1440">RWC</text>
 </svg>
