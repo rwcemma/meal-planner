@@ -5,7 +5,8 @@
 import { readPdf } from '../lib/send-plan.mjs';
 
 export default async (req, context) => {
-  const entry = await readPdf(context.params.id);
+  const id = context.params?.id || new URL(req.url).pathname.split('/').pop();
+  const entry = await readPdf(id);
   if (!entry) return new Response('This meal plan link has expired.', { status: 404 });
 
   return new Response(entry.data, {
