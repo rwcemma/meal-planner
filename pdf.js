@@ -344,11 +344,20 @@ function drawCover(ctx) {
   let y = 268;
   ctx.eyebrow('Redefining Wellness Center', cx, y, { align: 'center', size: 8.5 });
 
-  y += 62;
-  const nameLines = ctx.wrap(`${client.name}'s`, 'Poppins-ExtraBold', 54, W - 120);
+  // Largest size (54pt down to 26pt) where no word is split and the name fits on two lines
+  const nameText = `${client.name}'s`;
+  const nameWidth = W - 120;
+  let nameSize = 54;
+  let nameLines = ctx.wrap(nameText, 'Poppins-ExtraBold', nameSize, nameWidth);
+  const fits = size => pdfText(nameText).split(' ').every(word => ctx.width(word, 'Poppins-ExtraBold', size) <= nameWidth)
+    && ctx.wrap(nameText, 'Poppins-ExtraBold', size, nameWidth).length <= 2;
+  while (nameSize > 26 && !fits(nameSize)) nameSize -= 2;
+  nameLines = ctx.wrap(nameText, 'Poppins-ExtraBold', nameSize, nameWidth);
+
+  y += 8 + nameSize;
   nameLines.forEach(line => {
-    ctx.text(line, cx, y, { font: 'Poppins-ExtraBold', size: 54, color: PDF_COLORS.white, align: 'center' });
-    y += 56;
+    ctx.text(line, cx, y, { font: 'Poppins-ExtraBold', size: nameSize, color: PDF_COLORS.white, align: 'center' });
+    y += nameSize * 1.04;
   });
 
   y += 2;
