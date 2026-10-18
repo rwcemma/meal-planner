@@ -997,6 +997,39 @@ function statusAlert(type, message) {
   return `<div class="alert alert--${type}"><span class="alert__icon" aria-hidden="true">${icon}</span><span>${message}</span></div>`;
 }
 
+// Client details + current serving settings for pdf.js
+function pdfClientInfo() {
+  return {
+    name: state.clientName,
+    age: state.age,
+    weight: state.weight,
+    weightUnit: state.weightUnit,
+    protocols: [...state.protocols],
+    restrictions: restrictedFoods()
+  };
+}
+
+function pdfSettings(overrides = {}) {
+  return {
+    servings: state.servings,
+    baseServings: state.baseServings,
+    cookingSkill: state.cookingSkill,
+    cookingTime: state.cookingTime,
+    ...overrides
+  };
+}
+
+function setButtonBusy(button, busy, label = '') {
+  if (busy) {
+    button.dataset.label = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = `<span class="spinner" aria-hidden="true"></span> ${label}`;
+  } else {
+    button.disabled = false;
+    if (button.dataset.label) button.innerHTML = button.dataset.label;
+  }
+}
+
 function bindResults(el) {
   bindPreview(el);
 
@@ -1018,8 +1051,22 @@ function bindResults(el) {
     $('#emailStatus', el).innerHTML = statusAlert('info', 'Email delivery is connected in Step 13.');
   });
 
-  $('[data-action="download"]', el).addEventListener('click', () => {
-    $('#downloadStatus', el).innerHTML = statusAlert('info', 'PDF download is connected in Step 11.');
+  $('[data-action="download"]', el).addEventListener('click', async event => {
+    const button = event.currentTarget;
+    const status = $('#downloadStatus', el);
+    setButtonBusy(button, true, 'Preparing PDF…');
+    status.innerHTML = '';
+    try {
+      await generatePDF(state.planData, pdfClientInfo(), pdfSettings({ download: true }));
+      state.planDelivered = true;
+      saveState();
+      status.innerHTML = statusAlert('success', `Downloaded ${esc(pdfFileName(state.clientName))}`);
+    } catch (err) {
+      console.error(err);
+      status.innerHTML = statusAlert('error', esc(err.message || "Couldn't create the PDF. Please try again."));
+    } finally {
+      setButtonBusy(button, false);
+    }
   });
 
   $('[data-action="reset"]', el).addEventListener('click', resetApp);
