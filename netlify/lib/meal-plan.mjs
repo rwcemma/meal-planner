@@ -28,8 +28,43 @@ const SKILL_LEVELS = {
 const COOKING_TIMES = {
   Quick: 'Under 30 minutes total (prep + cook) per meal.',
   Standard: '30–60 minutes total (prep + cook) per meal.',
-  Leisurely: '60+ minutes is fine — the cook enjoys spending time in the kitchen.'
+  Leisurely: '60+ minutes is fine — the cook enjoys spending time in the kitchen.',
+  Mixed: 'Quick (under 30 minutes) on weeknights, in-depth recipes on the weekend.'
 };
+
+const WEEKEND = ['Saturday', 'Sunday'];
+
+// Per-day time rule; "Mixed" = quick Monday–Friday, in-depth Saturday & Sunday
+function cookingTimeLines(input, days) {
+  if (input.cookingTime !== 'Mixed') {
+    return [`- Time per meal: ${input.cookingTime} — ${COOKING_TIMES[input.cookingTime]}`];
+  }
+  const scope = days || [...DAYS_PART_1, ...DAYS_PART_2];
+  const weekdays = scope.filter(day => !WEEKEND.includes(day));
+  const weekend = scope.filter(day => WEEKEND.includes(day));
+  const lines = ['- Time per meal varies by day:'];
+  if (weekdays.length) lines.push(`  - ${weekdays.join(', ')}: QUICK — every meal under 30 minutes total (prep + cook), simple weeknight cooking.`);
+  if (weekend.length) lines.push(`  - ${weekend.join(', ')}: IN-DEPTH — 60+ minutes is welcome; make these the week's more involved, special recipes (slow braises, roasts, homemade sauces, batch-friendly projects).`);
+  return lines;
+}
+
+function validateMacroTargets(raw) {
+  if (raw == null) return null;
+  const int = (value, min, max, label) => {
+    const n = Math.round(Number(value));
+    if (!Number.isFinite(n) || n < min || n > max) throw new InputError(`Macro target for ${label} is out of range.`);
+    return n;
+  };
+  const text = value => String(value ?? '').replace(/[^\w\s-]/g, '').trim().slice(0, 30);
+  return {
+    calories: int(raw.calories, 800, 6000, 'calories'),
+    protein_g: int(raw.protein_g, 0, 500, 'protein'),
+    fat_g: int(raw.fat_g, 0, 400, 'fat'),
+    carbs_g: int(raw.carbs_g, 0, 900, 'carbs'),
+    goal: text(raw.goal),
+    style: text(raw.style)
+  };
+}
 
 export const GROCERY_CATEGORIES = [
   'Proteins', 'Vegetables', 'Fruits', 'Fats & Oils', 'Grains & Starches',
@@ -87,7 +122,8 @@ export function validateInput(raw) {
     cookingSkill: raw.cookingSkill,
     cookingTime: raw.cookingTime,
     servings,
-    includeSnack: raw.includeSnack === true
+    includeSnack: raw.includeSnack === true,
+    macroTargets: validateMacroTargets(raw.macroTargets)
   };
 }
 
@@ -103,7 +139,7 @@ Protocol adherence is non-negotiable:
 
 Respond ONLY with raw JSON. No markdown. No backticks. No explanation.`;
 
-function profileBlock(input) {
+function profileBlock(input, days) {
   const lines = [];
   lines.push('CLIENT');
   lines.push(`- Name: ${input.clientName}`);
@@ -129,9 +165,22 @@ function profileBlock(input) {
   lines.push('');
   lines.push('COOKING');
   lines.push(`- Skill level: ${input.cookingSkill} — ${SKILL_LEVELS[input.cookingSkill]}`);
-  lines.push(`- Time per meal: ${input.cookingTime} — ${COOKING_TIMES[input.cookingTime]}`);
+  lines.push(...cookingTimeLines(input, days));
   lines.push(`- Servings: every recipe makes ${input.servings} serving${input.servings === 1 ? '' : 's'}.`);
   lines.push(`- Meals per day: ${input.includeSnack ? 'breakfast, lunch, dinner, and one snack' : 'breakfast, lunch, and dinner (no snack)'}`);
+
+  const t = input.macroTargets;
+  if (t) {
+    lines.push('');
+    lines.push('DAILY MACRO TARGETS (per person, per day — the client tracks macros):');
+    lines.push(`- Calories: about ${t.calories} kcal`);
+    lines.push(`- Protein: ${t.protein_g} g · Fat: ${t.fat_g} g · Carbs: ${t.carbs_g} g`);
+    if (t.goal || t.style) lines.push(`- Goal: ${[t.goal, t.style].filter(Boolean).join(' · ')}`);
+    lines.push('- Build each day so its per-serving totals across all meals land within ±10% of every target. Protein is the top priority.');
+    lines.push('- Size portions and choose ingredients to hit the targets; keep any snack smaller than the main meals.');
+    lines.push('- Protocol rules always win: if a target conflicts with a protocol (for example carbs on Keto or Carnivore), follow the protocol and get as close as you can.');
+    lines.push('- Report macros accurately for the recipe as written — never adjust the numbers to look on-target.');
+  }
   return lines.join('\n');
 }
 
@@ -176,7 +225,7 @@ const RECIPE_RULES = `RECIPE RULES
 
 function daysPrompt(input, days, previousRecipeNames = []) {
   const parts = [
-    profileBlock(input),
+    profileBlock(input, days),
     '',
     RECIPE_RULES,
     ''

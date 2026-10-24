@@ -6,7 +6,6 @@
 const params = new URLSearchParams(window.location.search);
 const mode = params.get('mode') === 'client' ? 'client' : 'coach';
 
-const TOTAL_STEPS = 9;          // Screens 1–9 drive the progress bar (0 is the landing page)
 const STORAGE_KEY = 'rwc-meal-planner-state';
 
 function initialState() {
@@ -21,7 +20,19 @@ function initialState() {
     protocols: [],         // array of selected protocol names
     mealsPerDay: null,     // 3 | 4 — null until chosen on Screen 4
     cookingSkill: '',      // 'Beginner' | 'Intermediate' | 'Advanced'
-    cookingTime: '',       // 'Quick' | 'Standard' | 'Leisurely'
+    cookingTime: '',       // 'Quick' | 'Standard' | 'Leisurely' | 'Mixed'
+    macroMode: null,       // 'none' | 'targets' — optional daily macro targets (macros.js)
+    sex: '',               // 'female' | 'male' — only used for the calorie formula
+    heightFt: null,
+    heightIn: null,
+    heightCm: null,
+    activity: 'light',
+    macroGoal: 'maintain',
+    macroStyle: 'balanced',
+    macroStyleTouched: false,
+    customMacros: null,    // { protein, fat, carbs } grams when macroStyle is 'custom'
+    lastPresetTargets: null,
+    editingTargets: false, // true when opened from the results screen to adjust targets
     restrictions: {},      // { 'Chicken': true, 'Salmon': true, ... }
     baseServings: null,    // 1 | 2 | 4 — chosen on Screen 8, what recipes are written for
     servings: null,        // current serving count, adjustable 1–8 on Screen 10
@@ -79,8 +90,11 @@ const SKILL_OPTIONS = [
 const TIME_OPTIONS = [
   { value: 'Quick', icon: '⚡', title: 'Quick', desc: 'Under 30 minutes — fast and simple' },
   { value: 'Standard', icon: '🕐', title: 'Standard', desc: '30–60 minutes — relaxed weeknight cooking' },
-  { value: 'Leisurely', icon: '🍲', title: 'Leisurely', desc: '60+ minutes — I enjoy spending time in the kitchen' }
+  { value: 'Leisurely', icon: '🍲', title: 'Leisurely', desc: '60+ minutes — I enjoy spending time in the kitchen' },
+  { value: 'Mixed', icon: '🗓️', title: 'Mix it up', desc: 'Quick on weeknights (Mon–Fri), in-depth recipes on the weekend' }
 ];
+
+const timeLabel = value => (value === 'Mixed' ? 'Quick weekdays · in-depth weekends' : value);
 
 const SERVING_OPTIONS = [
   { value: 1, icon: '👤', title: 'Just me', desc: '1 serving per meal' },
@@ -173,8 +187,9 @@ function protocolLabel() {
    Each screen: { title, render(), bind(el)?, onEnter(el)?, isValid() }
    ========================================================================== */
 const SCREENS = [
-  /* ── SCREEN 0: LANDING ─────────────────────────────────────────────── */
+  /* ── LANDING ───────────────────────────────────────────────────────── */
   {
+    id: 'landing',
     title: '',
     render: () => `
       <div class="hero">
@@ -190,8 +205,9 @@ const SCREENS = [
     isValid: () => true
   },
 
-  /* ── SCREEN 1: CLIENT INFO ─────────────────────────────────────────── */
+  /* ── CLIENT INFO ─────────────────────────────────────────────────────── */
   {
+    id: 'info',
     title: 'Client Info',
     render: () => `
       <div class="screen__inner screen__inner--narrow">
@@ -245,14 +261,15 @@ const SCREENS = [
       $('form', el).addEventListener('submit', event => {
         event.preventDefault();
         showEmailError();
-        if (SCREENS[1].isValid()) goToScreen(2);
+        if (SCREENS[state.currentScreen].isValid()) goToScreen(state.currentScreen + 1);
       });
     },
     isValid: () => state.clientName.length > 0 && isValidEmail(state.clientEmail)
   },
 
-  /* ── SCREEN 2: BASIC INFO ──────────────────────────────────────────── */
+  /* ── BASIC INFO ──────────────────────────────────────────────────────── */
   {
+    id: 'basic',
     title: 'Basic Info',
     render: () => `
       <div class="screen__inner">
@@ -317,14 +334,15 @@ const SCREENS = [
 
       $('form', el).addEventListener('submit', event => {
         event.preventDefault();
-        if (SCREENS[2].isValid()) goToScreen(3);
+        if (SCREENS[state.currentScreen].isValid()) goToScreen(state.currentScreen + 1);
       });
     },
     isValid: () => isValidAge(state.age) && isValidWeight(state.weight)
   },
 
-  /* ── SCREEN 3: DIET PROTOCOLS ──────────────────────────────────────── */
+  /* ── DIET PROTOCOLS ──────────────────────────────────────────────────── */
   {
+    id: 'protocols',
     title: 'Diet Protocols',
     render: () => `
       <div class="screen__inner">
@@ -376,8 +394,18 @@ const SCREENS = [
     isValid: () => state.protocols.length > 0 && getIncompatiblePairs(state.protocols).length === 0
   },
 
-  /* ── SCREEN 4: MEALS PER DAY ───────────────────────────────────────── */
+  /* ── MACRO TARGETS (optional, macros.js) ───────────────────────────── */
   {
+    id: 'macros',
+    title: 'Macro Targets',
+    render: renderMacroScreen,
+    bind: bindMacroScreen,
+    isValid: () => macroScreenValid()
+  },
+
+  /* ── MEALS PER DAY ─────────────────────────────────────────────────── */
+  {
+    id: 'meals',
     title: 'Meals Per Day',
     render: () => singleSelectScreen({
       headline: 'How many meals per day?',
@@ -389,8 +417,9 @@ const SCREENS = [
     isValid: () => state.mealsPerDay === 3 || state.mealsPerDay === 4
   },
 
-  /* ── SCREEN 5: COOKING SKILL ───────────────────────────────────────── */
+  /* ── COOKING SKILL ───────────────────────────────────────────────────── */
   {
+    id: 'skill',
     title: 'Cooking Skill',
     render: () => singleSelectScreen({
       headline: "What's the cooking skill level?",
@@ -403,29 +432,32 @@ const SCREENS = [
     isValid: () => SKILL_OPTIONS.some(o => o.value === state.cookingSkill)
   },
 
-  /* ── SCREEN 6: COOKING TIME ────────────────────────────────────────── */
+  /* ── COOKING TIME ────────────────────────────────────────────────────── */
   {
+    id: 'time',
     title: 'Cooking Time',
     render: () => singleSelectScreen({
       headline: 'How much time per meal?',
       options: TIME_OPTIONS,
       selected: state.cookingTime,
-      gridClass: 'card-grid--3'
+      gridClass: 'card-grid--narrow'
     }),
     bind: el => bindSingleSelect(el, 'cookingTime'),
     isValid: () => TIME_OPTIONS.some(o => o.value === state.cookingTime)
   },
 
-  /* ── SCREEN 7: FOOD RESTRICTIONS ───────────────────────────────────── */
+  /* ── FOOD RESTRICTIONS ───────────────────────────────────────────────── */
   {
+    id: 'restrictions',
     title: 'Food Restrictions',
     render: renderRestrictions,
     bind: bindRestrictions,
     isValid: () => true
   },
 
-  /* ── SCREEN 8: SERVING SIZE ────────────────────────────────────────── */
+  /* ── SERVING SIZE ────────────────────────────────────────────────────── */
   {
+    id: 'servings',
     title: 'Serving Size',
     render: () => singleSelectScreen({
       headline: 'How many people are we cooking for?',
@@ -438,8 +470,9 @@ const SCREENS = [
     isValid: () => [1, 2, 4].includes(state.baseServings)
   },
 
-  /* ── SCREEN 9: GENERATION ──────────────────────────────────────────── */
+  /* ── GENERATION ──────────────────────────────────────────────────────── */
   {
+    id: 'generate',
     title: 'Building Your Plan',
     render: () => `
       <div class="gen">
@@ -476,8 +509,9 @@ const SCREENS = [
     isValid: () => Boolean(state.planData)
   },
 
-  /* ── SCREEN 10: PREVIEW & DELIVERY ─────────────────────────────────── */
+  /* ── PREVIEW & DELIVERY ──────────────────────────────────────────────── */
   {
+    id: 'results',
     title: 'Your Meal Plan',
     render: renderResults,
     bind: bindResults,
@@ -617,7 +651,7 @@ function bindRestrictions(el) {
     }
   });
 
-  $('[data-action="skip"]', el).addEventListener('click', () => goToScreen(8));
+  $('[data-action="skip"]', el).addEventListener('click', () => goToScreen(state.currentScreen + 1));
   refreshRestrictions(el);
 }
 
@@ -648,7 +682,8 @@ function getGenerationInput() {
     cookingSkill: state.cookingSkill,
     cookingTime: state.cookingTime,
     servings: state.baseServings,
-    includeSnack: state.mealsPerDay === 4
+    includeSnack: state.mealsPerDay === 4,
+    macroTargets: state.macroMode === 'targets' ? computeMacroTargets() : null
   };
 }
 
@@ -668,20 +703,22 @@ async function runGeneration(el) {
   $('.gen__mark', el).style.animationPlayState = 'running';
 
   try {
-    const planData = await generateMealPlan(getGenerationInput(), (index, status) => {
+    const input = getGenerationInput();
+    const planData = await generateMealPlan(input, (index, status) => {
       if (run === generationRun) setStepStatus(el, index, status);
     });
-    if (run !== generationRun || state.currentScreen !== 9) return;
+    if (run !== generationRun || state.currentScreen !== screenIndex('generate')) return;
 
+    planData.macro_targets = input.macroTargets; // what this plan was built to hit
     state.planData = planData;
     state.servings = state.baseServings;
     state.groceryChecked = {};
     activeTab = 0;
     state.planDelivered = false;
     saveState();
-    goToScreen(10);
+    goToScreen(screenIndex('results'));
   } catch (err) {
-    if (run !== generationRun || state.currentScreen !== 9) return;
+    if (run !== generationRun || state.currentScreen !== screenIndex('generate')) return;
     console.error(err);
     state.generationError = err.message || 'Something went wrong while building the plan.';
     $$('.gen-step[data-status="active"]', el).forEach(step => setStepStatus(el, Number(step.dataset.step), 'error'));
@@ -813,18 +850,51 @@ function renderMeal(slot, meal, factor) {
     </article>`;
 }
 
+// "✓" when a day's total is within ±10% of its target, otherwise the gap ("+18g", "−120")
+function targetDelta(actual, target, unit = 'g') {
+  if (!target) return '';
+  const diff = actual - target;
+  if (Math.abs(diff) <= target * 0.1) return '<span class="target-delta target-delta--ok" title="Within 10% of target">✓</span>';
+  const sign = diff > 0 ? '+' : '−';
+  return `<span class="target-delta" title="Target ${target.toLocaleString('en-US')}${unit}">${sign}${Math.abs(Math.round(diff)).toLocaleString('en-US')}${unit}</span>`;
+}
+
 function renderDay(day) {
   const factor = servingFactor();
+  const t = state.planData.macro_targets;
   return `
     <h3 class="sr-only">${esc(day.day)}</h3>
     ${Object.entries(day.meals).map(([slot, meal]) => renderMeal(slot, meal, factor)).join('')}
     <div class="daily-totals">
       <span class="daily-totals__label">Daily totals</span>
-      <span>P ${day.daily_protein_g}g</span>
-      <span>F ${day.daily_fat_g}g</span>
-      <span>C ${day.daily_carbs_g}g</span>
-      <span>${day.daily_calories.toLocaleString()} cal</span>
-      <span class="daily-totals__note">per person</span>
+      <span>P ${day.daily_protein_g}g ${targetDelta(day.daily_protein_g, t?.protein_g)}</span>
+      <span>F ${day.daily_fat_g}g ${targetDelta(day.daily_fat_g, t?.fat_g)}</span>
+      <span>C ${day.daily_carbs_g}g ${targetDelta(day.daily_carbs_g, t?.carbs_g)}</span>
+      <span>${day.daily_calories.toLocaleString()} cal ${targetDelta(day.daily_calories, t?.calories, '')}</span>
+      <span class="daily-totals__note">per person${t ? ' · ✓ = within 10% of target' : ''}</span>
+    </div>`;
+}
+
+// Daily macro targets at the top of the preview, with a way to set or change them
+function renderMacroBar() {
+  const t = state.planData.macro_targets;
+  if (!t) {
+    return `
+      <div class="macro-bar macro-bar--empty">
+        <span>Tracking macros?</span>
+        <button type="button" class="btn btn--text" data-action="adjust-macros">🎯 Set daily macro targets</button>
+      </div>`;
+  }
+  return `
+    <div class="macro-bar">
+      <div class="macro-bar__targets">
+        <span class="eyebrow">Daily targets</span>
+        <span class="macro-bar__values">
+          <b>${t.calories.toLocaleString('en-US')}</b> cal · P <b>${t.protein_g}g</b> · F <b>${t.fat_g}g</b> · C <b>${t.carbs_g}g</b>
+        </span>
+        <span class="macro-bar__meta">per person · ${esc(t.goal)} · ${esc(t.style)}</span>
+      </div>
+      <button type="button" class="btn btn--ghost macro-bar__adjust" data-action="adjust-macros">Adjust targets</button>
     </div>`;
 }
 
@@ -862,6 +932,8 @@ function renderPreview() {
   if (!hasPlan()) return renderPlanPanel();
   const restrictions = restrictedFoods();
   return `
+    ${renderMacroBar()}
+
     <div class="preview-toolbar">
       <div class="servings-control" role="group" aria-label="Servings per meal">
         <span id="servingsLabel">Servings:</span>
@@ -916,6 +988,13 @@ function bindPreview(el) {
   };
 
   preview.addEventListener('click', event => {
+    if (event.target.closest('[data-action="adjust-macros"]')) {
+      state.editingTargets = true;
+      saveState();
+      goToScreen(screenIndex('macros'), 'back', { force: true });
+      return;
+    }
+
     const tab = event.target.closest('.tab');
     if (tab) {
       selectTab(tab.dataset.tab === 'grocery' ? 'grocery' : Number(tab.dataset.tab));
@@ -967,7 +1046,7 @@ function renderResults() {
             <span class="summary-bar__name">${esc(state.clientName)}</span>
             ${state.protocols.map(p => `<span class="pill">${esc(p)}</span>`).join('')}
             <span class="pill">${esc(state.cookingSkill)}</span>
-            <span class="pill">${esc(state.cookingTime)}</span>
+            <span class="pill">${esc(timeLabel(state.cookingTime))}</span>
           </div>
           <div id="planPreview">${renderPreview()}</div>
         </section>
@@ -1016,6 +1095,7 @@ function pdfSettings(overrides = {}) {
     baseServings: state.baseServings,
     cookingSkill: state.cookingSkill,
     cookingTime: state.cookingTime,
+    macroTargets: state.planData?.macro_targets || null,
     ...overrides
   };
 }
@@ -1068,6 +1148,7 @@ function bindResults(el) {
         dietProtocols: [...state.protocols],
         cookingSkill: state.cookingSkill,
         cookingTime: state.cookingTime,
+        macroTargets: state.planData?.macro_targets || null,
         servings: state.servings,
         generatedDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         pdfBase64,
@@ -1119,6 +1200,8 @@ function resetApp() {
 /* ==========================================================================
    Navigation
    ========================================================================== */
+const screenIndex = id => SCREENS.findIndex(screen => screen.id === id);
+
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 function updateChrome() {
@@ -1129,9 +1212,9 @@ function updateChrome() {
   $('#stepTitle').textContent = screen.title;
   // Back is hidden on the landing page, during generation, and on the results
   // (going back from results would re-run generation — use "Build another plan").
-  $('#backBtn').hidden = n === 0 || n >= 9;
+  $('#backBtn').hidden = n === 0 || n >= screenIndex('generate');
 
-  const progress = Math.min(100, (n / TOTAL_STEPS) * 100);
+  const progress = Math.min(100, (n / screenIndex('generate')) * 100);
   $('#progressFill').style.width = `${progress}%`;
   $('#progress').setAttribute('aria-valuenow', Math.round(progress));
 
@@ -1214,8 +1297,9 @@ function loadState() {
     if (!saved || typeof saved !== 'object') return;
     state = { ...initialState(), ...saved, mode }; // URL decides the mode
     // A refresh mid-generation (or with no plan) resumes at the last quiz step
-    if (state.currentScreen === 9 || (state.currentScreen === 10 && !state.planData)) {
-      state.currentScreen = 8;
+    const generate = screenIndex('generate');
+    if (state.currentScreen === generate || (state.currentScreen === screenIndex('results') && !state.planData)) {
+      state.currentScreen = generate - 1;
     }
   } catch (e) { /* ignore corrupt or unavailable storage */ }
 }
@@ -1240,7 +1324,7 @@ $('#backBtn').addEventListener('click', () => {
 
 // Warn before leaving mid-generation or with an undelivered plan
 window.addEventListener('beforeunload', event => {
-  if (state.currentScreen === 9 || (state.currentScreen === 10 && !state.planDelivered)) {
+  if (state.currentScreen === screenIndex('generate') || (state.currentScreen === screenIndex('results') && !state.planDelivered)) {
     event.preventDefault();
     event.returnValue = '';
   }

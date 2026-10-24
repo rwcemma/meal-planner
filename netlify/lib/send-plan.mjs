@@ -42,7 +42,7 @@ export function validatePayload(raw) {
   }
 
   if (!['Beginner', 'Intermediate', 'Advanced'].includes(raw.cookingSkill)) throw new PayloadError('Cooking skill is not valid.');
-  if (!['Quick', 'Standard', 'Leisurely'].includes(raw.cookingTime)) throw new PayloadError('Cooking time is not valid.');
+  if (!['Quick', 'Standard', 'Leisurely', 'Mixed'].includes(raw.cookingTime)) throw new PayloadError('Cooking time is not valid.');
 
   const servings = Number(raw.servings);
   if (!Number.isInteger(servings) || servings < 1 || servings > 8) throw new PayloadError('Servings must be between 1 and 8.');
@@ -59,8 +59,15 @@ export function validatePayload(raw) {
     || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const pdfFileName = `${clientName.replace(/[^\p{L}\p{N}]+/gu, '_')}_Meal_Plan.pdf`;
 
+  // Optional macro targets → one readable line for the coach's email/CRM
+  const t = raw.macroTargets;
+  const nums = t && ['calories', 'protein_g', 'fat_g', 'carbs_g'].map(k => Math.round(Number(t[k])));
+  const macroTargets = nums && nums.every(n => Number.isFinite(n) && n >= 0 && n <= 6000)
+    ? `${nums[0]} cal · P ${nums[1]}g · F ${nums[2]}g · C ${nums[3]}g per day`
+    : '';
+
   return { clientName, clientEmail, dietProtocols, cookingSkill: raw.cookingSkill, cookingTime: raw.cookingTime,
-    servings, generatedDate, pdfBase64, pdfBytes, pdfFileName, mode };
+    servings, generatedDate, pdfBase64, pdfBytes, pdfFileName, mode, macroTargets };
 }
 
 // Stores the PDF under an unguessable id; returns that id

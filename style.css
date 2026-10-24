@@ -91,7 +91,7 @@ h1, h2, h3, h4 { margin: 0; line-height: 1.2; font-weight: 800; letter-spacing: 
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -612,6 +612,156 @@ button { cursor: pointer; }
   margin-top: 20px;
 }
 .selection-count strong { color: var(--teal-dark); }
+
+/* ==========================================================================
+   Macro targets (optional screen) + results macro bar
+   ========================================================================== */
+.option-card[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+
+.macro-panel {
+  margin: 28px auto 0;
+  max-width: 720px;
+  padding: 28px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.macro-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 20px 24px;
+  align-items: start;
+}
+.macro-grid__wide { grid-column: 1 / -1; }
+
+.height-ftin { display: flex; gap: 10px; }
+.height-ftin .input { max-width: 120px; }
+
+select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 48px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position: calc(100% - 24px) 50%, calc(100% - 18px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.choice-pills { display: flex; flex-wrap: wrap; gap: 10px; }
+.choice-pill {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 8px 18px;
+  border: 1.5px solid rgba(13, 20, 64, 0.18);
+  border-radius: var(--radius-btn);
+  background: var(--white);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  transition: all var(--t-fast);
+}
+.choice-pill small { font-size: 14px; font-weight: 400; color: var(--muted); }
+.choice-pill:hover { border-color: var(--accent); }
+.choice-pill[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--white);
+}
+.choice-pill[aria-pressed="true"] small { color: rgba(255, 255, 255, 0.75); }
+
+.macro-result {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px 24px;
+  align-items: center;
+  padding: 22px 24px;
+  border-radius: var(--radius-card);
+  background: var(--pinstripe), var(--grad);
+  color: var(--white);
+}
+.macro-result__empty { grid-column: 1 / -1; margin: 0; font-size: 16px; color: rgba(255, 255, 255, 0.8); }
+.macro-result__calories { display: flex; flex-direction: column; gap: 2px; }
+.macro-result__number {
+  font-family: var(--font-accent);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 48px;
+  line-height: 1;
+  color: var(--white);
+}
+.macro-result__unit { font-size: 14px; color: rgba(255, 255, 255, 0.75); }
+.macro-result__boxes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+
+.macro-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(0, 196, 204, 0.35);
+}
+.macro-box__label { font-size: 14px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.macro-box__value { font-size: 28px; font-weight: 800; color: var(--white); line-height: 1.1; }
+.macro-box__value small { font-size: 16px; font-weight: 600; margin-left: 2px; }
+.macro-box__pct { font-size: 14px; color: rgba(255, 255, 255, 0.7); }
+.macro-box__input { display: flex; align-items: center; gap: 6px; color: var(--white); font-weight: 600; }
+.macro-box__input .input { min-height: 48px; padding: 8px 10px; font-size: 18px; text-align: center; box-shadow: none; }
+
+.macro-warning {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 141, 40, 0.16);
+  border: 1px solid rgba(255, 141, 40, 0.5);
+  color: var(--white);
+  font-size: 15px;
+}
+.macro-note { font-size: 14px; color: var(--muted); margin: -8px 0 0; }
+
+.macro-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-card);
+  background: var(--cream);
+  border: 1px solid rgba(0, 196, 204, 0.35);
+}
+.macro-bar__targets { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.macro-bar__targets .eyebrow { color: var(--teal-dark); font-size: 14px; }
+.macro-bar__values { font-size: 18px; color: var(--ink); }
+.macro-bar__values b { font-weight: 800; }
+.macro-bar__meta { font-size: 14px; color: var(--muted); }
+.macro-bar__adjust { min-height: 44px; padding: 10px 20px; font-size: 15px; }
+.macro-bar--empty { font-size: 16px; color: var(--ink2); }
+.macro-bar--empty .btn--text { padding: 8px 4px; }
+
+.target-delta {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 141, 40, 0.22);
+  color: #ffd2a8;
+  font-size: 14px;
+  font-weight: 700;
+}
+.target-delta--ok { background: rgba(0, 196, 204, 0.22); color: var(--accent); }
 
 /* ==========================================================================
    Screen 7 — Food restriction categories + chips
@@ -1330,6 +1480,23 @@ button { cursor: pointer; }
   .screen-actions .btn--primary { width: 100%; }
 
   .preview-panel { padding: 16px; }
+
+  .macro-panel { padding: 20px 16px; }
+  .macro-grid { grid-template-columns: 1fr; }
+  .macro-result { grid-template-columns: 1fr; padding: 18px 16px; }
+  .macro-result__boxes { grid-template-columns: 1fr; }
+  .macro-box { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+  .macro-box__label { min-width: 80px; }
+  .macro-bar__adjust { width: 100%; min-height: 48px; }
+  .eyebrow,
+  .macro-warning,
+  .macro-note,
+  .macro-bar__meta,
+  .macro-box__label,
+  .macro-box__pct,
+  .macro-result__unit,
+  .choice-pill small,
+  .target-delta { font-size: 16px; }
 
   /* All 8 tabs visible on phones: two rows of four instead of a hidden scroll */
   .tabs {

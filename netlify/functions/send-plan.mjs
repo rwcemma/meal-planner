@@ -35,6 +35,7 @@ export default async (req, context) => {
       dietProtocols: plan.dietProtocols,
       cookingSkill: plan.cookingSkill,
       cookingTime: plan.cookingTime,
+      macroTargets: plan.macroTargets, // '' when no targets were set
       servings: plan.servings,
       generatedDate: plan.generatedDate,
       pdfBase64: plan.pdfBase64,

@@ -429,6 +429,7 @@ function drawCover(ctx) {
   const info = [
     client.age ? `Age ${client.age}` : '',
     client.weight ? `${client.weight} ${client.weightUnit || 'lbs'}` : '',
+    ctx.settings.macroTargets ? `${Number(ctx.settings.macroTargets.calories).toLocaleString('en-US')} cal/day target` : '',
     `Generated ${generated}`
   ].filter(Boolean).join('   ·   ');
   ctx.text(info, cx, y, { font: 'Poppins-Light', size: 10, color: PDF_COLORS.onNavyMuted, align: 'center' });
@@ -683,6 +684,16 @@ function drawNotes(ctx) {
     x += w + 8;
   }
   y += 40;
+
+  const t = ctx.settings.macroTargets;
+  if (t) {
+    y += drawCallout(ctx, y, {
+      label: 'Daily macro targets', labelColor: PDF_COLORS.tealDeep,
+      body: `${Number(t.calories).toLocaleString('en-US')} calories · Protein ${t.protein_g}g · Fat ${t.fat_g}g · Carbs ${t.carbs_g}g per person, per day`
+        + `${t.goal ? ` (${t.goal}${t.style ? `, ${t.style}` : ''})` : ''}. Each day's totals are shown at the bottom of its page — the protocol rules always come first.`,
+      border: PDF_COLORS.navyBright, background: PDF_COLORS.cream
+    }) + 14;
+  }
 
   if (plan.protocol_notes) {
     y += drawCallout(ctx, y, {

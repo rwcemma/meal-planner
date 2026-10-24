@@ -43,6 +43,7 @@ Every webhook call includes these fields:
 | Step | Where |
 |---|---|
 | Quiz screens, navigation, servings scaler | `app.js`, `style.css`, `index.html` |
+| Optional macro targets (calculator + screen) | `macros.js` |
 | Food list (14 categories) | `data/foods.js` |
 | Protocol names and **the rules Claude must follow** | `data/protocols.js` |
 | Starting generation and checking its progress | `generate.js` → `netlify/functions/generate-plan.mjs` and `plan-status.mjs` |
@@ -51,6 +52,17 @@ Every webhook call includes these fields:
 | Email | `email.js` → `netlify/functions/send-plan.mjs`, `plan-pdf.mjs`, `netlify/lib/send-plan.mjs` |
 
 Generation runs as a Netlify **background function** because three full-recipe Claude calls take longer than a normal function is allowed to run. The browser checks `/api/plan-status` every 2 seconds, and Screen 9 shows each step as it finishes. The model is `claude-sonnet-4-6` with up to 10,000 tokens per call.
+
+**Cooking time "Mix it up"** writes quick meals (under 30 min) Monday–Friday and in-depth recipes on Saturday and Sunday.
+
+**Macro targets (optional):** after the protocols, the quiz asks whether the client tracks macros. If they do, it works like calculator.net:
+- It uses the Mifflin-St Jeor equation with sex, height, weight, age and activity level.
+- **Goals:** lose weight, lose gently, maintain, build muscle, gain weight.
+- **Macro styles:** Balanced, Protein-forward, Lower fat, Lower carb, Keto, or Custom grams.
+- Calories never go below 1,200 (women) or 1,500 (men), and targets are for adults 18 and over only.
+- Claude is asked to keep each day within ±10% of every target, but protocol rules always come first.
+- The results screen shows the targets at the top and marks each day's totals with ✓ (on target) or the gap. **Adjust targets** rebuilds the plan with new numbers.
+- The Zap also receives a `macroTargets` summary line, or an empty string if no targets were set.
 
 **Clinical review:** the per-protocol rules in `data/protocols.js` are sent to Claude word for word. Have the clinical team review and edit them so they match RWC's own protocol handouts.
 
