@@ -21,6 +21,7 @@ function initialState() {
     mealsPerDay: null,     // 3 | 4 — null until chosen on Screen 4
     cookingSkill: '',      // 'Beginner' | 'Intermediate' | 'Advanced'
     cookingTime: '',       // 'Quick' | 'Standard' | 'Leisurely' | 'Mixed'
+    includeSmoothies: true, // ask for a few quick smoothie breakfasts/snacks
     macroMode: null,       // 'none' | 'targets' — optional daily macro targets (macros.js)
     sex: '',               // 'female' | 'male' — only used for the calorie formula
     heightFt: null,
@@ -55,6 +56,7 @@ const COPY = {
     emailLabel: "Client's email — we'll send the plan here",
     basicHeadline: name => `A bit about ${name}`,
     skillSub: 'This shapes how complex the recipes will be.',
+    protocolSub: name => `Select the dietary styles that best describe what ${name}'s provider has recommended — or how ${name} feels best eating right now. Don't worry about finding a perfect fit: in a few steps you'll get more specific about the exact foods to avoid, to make this even more customized.`,
     restrictSub: name => `Check anything ${name} can't eat — even if it's normally allowed on their protocol. Leave everything unchecked if none.`,
     genHeadline: name => `Building <span class="accent">${name}'s</span> meal plan…`,
     deliveryHeadline: name => `Ready! Let's get this to <span class="accent">${name}.</span>`
@@ -65,6 +67,7 @@ const COPY = {
     emailLabel: "Your email — we'll send your plan here",
     basicHeadline: name => `A bit about you, ${name}`,
     skillSub: "We'll match recipes to your comfort in the kitchen.",
+    protocolSub: () => "Select the dietary styles that best describe what your provider has recommended — or how you personally feel best eating right now. Don't worry about finding a perfect fit: in a few steps you'll get more specific about the exact foods you want to avoid, to make this even more customized.",
     restrictSub: () => "Check anything you can't eat — even if it's normally allowed on your protocol. Leave everything unchecked if none.",
     genHeadline: name => `Building <span class="accent">${name}'s</span> meal plan…`,
     deliveryHeadline: name => `Ready! Your plan is here, <span class="accent">${name}.</span>`
@@ -164,7 +167,7 @@ function bindSingleSelect(el, key, parse = v => v) {
   });
 }
 
-function singleSelectScreen({ headline, subhead, options, selected, gridClass }) {
+function singleSelectScreen({ headline, subhead, options, selected, gridClass, extra = '' }) {
   return `
     <div class="screen__inner">
       <h2 class="screen-headline" tabindex="-1">${headline}</h2>
@@ -172,6 +175,7 @@ function singleSelectScreen({ headline, subhead, options, selected, gridClass })
       <div class="card-grid ${gridClass}" role="group" aria-label="${esc(headline)}">
         ${options.map(opt => optionCard(opt, opt.value === selected, true)).join('')}
       </div>
+      ${extra}
       <div class="screen-actions">${continueButton()}</div>
     </div>`;
 }
@@ -346,8 +350,9 @@ const SCREENS = [
     title: 'Diet Protocols',
     render: () => `
       <div class="screen__inner">
-        <h2 class="screen-headline" tabindex="-1">Which eating protocol(s) has your provider recommended?</h2>
-        <p class="screen-subhead">Select all that apply — we'll automatically find foods that work across all selected protocols.</p>
+        <h2 class="screen-headline" tabindex="-1">${state.mode === 'client' ? 'Which eating styles fit you best?' : `Which eating styles fit ${name()} best?`}</h2>
+        <p class="screen-subhead">${esc(copy().protocolSub(state.clientName || 'your client'))}</p>
+        <p class="screen-note">Select all that apply — we'll find foods that work across every style you choose.</p>
         <div class="card-grid" role="group" aria-label="Diet protocols">
           ${PROTOCOLS.map(p => optionCard(
             { value: p.name, icon: p.icon, title: p.name, desc: p.description },
@@ -411,9 +416,28 @@ const SCREENS = [
       headline: 'How many meals per day?',
       options: MEAL_OPTIONS,
       selected: state.mealsPerDay,
-      gridClass: 'card-grid--narrow'
+      gridClass: 'card-grid--narrow',
+      extra: `
+        <div class="toggle-row">
+          <button type="button" class="switch switch--positive" role="switch" aria-checked="${state.includeSmoothies}"
+                  aria-labelledby="smoothieLabel" aria-describedby="smoothieHint" id="smoothieSwitch">
+            <span class="switch__track" aria-hidden="true"></span>
+          </button>
+          <span class="toggle-row__text">
+            <span class="toggle-row__label" id="smoothieLabel">🥤 Include smoothies</span>
+            <span class="toggle-row__hint" id="smoothieHint">Quick blender breakfasts${state.mealsPerDay === 4 ? ' or snacks' : ''} a few days a week — protocol-friendly and protein-packed</span>
+          </span>
+        </div>`
     }),
-    bind: el => bindSingleSelect(el, 'mealsPerDay', Number),
+    bind: el => {
+      bindSingleSelect(el, 'mealsPerDay', Number);
+      const toggle = $('#smoothieSwitch', el);
+      toggle.addEventListener('click', () => {
+        state.includeSmoothies = !state.includeSmoothies;
+        toggle.setAttribute('aria-checked', state.includeSmoothies);
+        saveState();
+      });
+    },
     isValid: () => state.mealsPerDay === 3 || state.mealsPerDay === 4
   },
 
@@ -461,7 +485,7 @@ const SCREENS = [
     title: 'Serving Size',
     render: () => singleSelectScreen({
       headline: 'How many people are we cooking for?',
-      subhead: 'You can adjust this per meal after the plan is generated.',
+      subhead: 'Meal prepping or cooking in bulk? Choose <strong>Family of 3–4</strong> to get extra servings from every recipe. You can also fine-tune servings after the plan is built.',
       options: SERVING_OPTIONS,
       selected: state.baseServings,
       gridClass: 'card-grid--3'
@@ -524,21 +548,49 @@ const SCREENS = [
    ========================================================================== */
 let openCategory = null;
 
+// Foods the selected protocols already rule out (food → protocol names); locked on this screen
+let lockedFoods = new Map();
+
+const isAvoided = food => lockedFoods.has(food) || Boolean(state.restrictions[food]);
+
 function categoryRestrictedCount(category) {
-  return getCategoryItems(category).filter(food => state.restrictions[food]).length;
+  return getCategoryItems(category).filter(isAvoided).length;
 }
 
 function foodChip(food) {
+  const locked = lockedFoods.get(food);
+  if (locked) {
+    return `<button type="button" class="food-chip is-restricted is-locked" aria-pressed="true" aria-disabled="true"
+                    data-food="${esc(food)}" title="Ruled out by ${esc(locked.join(', '))}">
+              <span aria-hidden="true">🔒</span> ${esc(food)}<span class="sr-only"> (ruled out by ${esc(locked.join(', '))})</span>
+            </button>`;
+  }
   const restricted = Boolean(state.restrictions[food]);
   return `<button type="button" class="food-chip${restricted ? ' is-restricted' : ''}"
                   aria-pressed="${restricted}" data-food="${esc(food)}">${esc(food)}</button>`;
 }
 
+// A few familiar examples of what the protocols rule out
+const EXAMPLE_FOODS = ['Peanuts', 'Cashews', 'Corn', 'Tomatoes', 'Spinach', 'Mushrooms', 'Garlic', 'Onion', 'Bread (all)',
+  'Eggs (whole)', "Cow's milk", 'Honey', 'Dried fruits (all)', 'Pork', 'Shrimp', 'Coffee', 'Black beans', 'Almonds'];
+
+function lockedExample() {
+  const names = [...EXAMPLE_FOODS.filter(food => lockedFoods.has(food)), ...lockedFoods.keys()]
+    .filter((food, i, all) => all.indexOf(food) === i)
+    .slice(0, 3);
+  return names.length ? ` (for example ${names.map(esc).join(', ')})` : '';
+}
+
 function renderRestrictions() {
+  lockedFoods = getProtocolAvoids(state.protocols, FOOD_CATEGORIES);
   return `
     <div class="screen__inner screen__inner--wide">
       <h2 class="screen-headline" tabindex="-1">Any foods to avoid?</h2>
       <p class="screen-subhead">${esc(copy().restrictSub(state.clientName || 'your client'))}</p>
+      <div class="instructions">
+        <p class="instructions__step"><span aria-hidden="true">👆</span> <span><strong>Click on a category</strong>, then select <strong>every item</strong> in that category you'd like to avoid.</span></p>
+        ${lockedFoods.size ? `<p class="instructions__step"><span aria-hidden="true">🔒</span> <span><strong>${lockedFoods.size} foods</strong> are already ruled out by ${esc(state.protocols.join(' + '))}${lockedExample()} — they're marked and locked, so you only need to add anything else.</span></p>` : ''}
+      </div>
       <div class="category-grid">
         ${FOOD_CATEGORIES.map((category, i) => {
           const items = getCategoryItems(category);
@@ -585,7 +637,7 @@ function renderRestrictions() {
 
 // Sync every chip, badge, switch and summary with state.restrictions (no re-render).
 function refreshRestrictions(el) {
-  $$('.food-chip', el).forEach(chip => {
+  $$('.food-chip:not(.is-locked)', el).forEach(chip => {
     const restricted = Boolean(state.restrictions[chip.dataset.food]);
     chip.classList.toggle('is-restricted', restricted);
     chip.setAttribute('aria-pressed', restricted);
@@ -600,10 +652,11 @@ function refreshRestrictions(el) {
     $('[data-select-all]', card).setAttribute('aria-checked', count === total);
   });
 
-  const n = restrictedFoods().length;
-  $('#restrictionSummary', el).innerHTML = n
-    ? `<strong>${n}</strong> food${n === 1 ? '' : 's'} marked to avoid`
-    : 'No foods marked to avoid';
+  const n = restrictedFoods().filter(food => !lockedFoods.has(food)).length;
+  const locked = lockedFoods.size ? `<strong>${lockedFoods.size}</strong> ruled out by the protocol${state.protocols.length === 1 ? '' : 's'} · ` : '';
+  $('#restrictionSummary', el).innerHTML = locked + (n
+    ? `<strong>${n}</strong> more food${n === 1 ? '' : 's'} marked to avoid`
+    : 'no other foods marked to avoid');
   $('[data-action="skip"]', el).hidden = n > 0;
 }
 
@@ -630,6 +683,7 @@ function bindRestrictions(el) {
   el.addEventListener('click', event => {
     const chip = event.target.closest('.food-chip');
     if (chip) {
+      if (chip.classList.contains('is-locked')) return; // ruled out by the protocol
       const food = chip.dataset.food;
       if (state.restrictions[food]) delete state.restrictions[food];
       else state.restrictions[food] = true;
@@ -640,7 +694,7 @@ function bindRestrictions(el) {
 
     const toggle = event.target.closest('[data-select-all]');
     if (toggle) {
-      const items = getCategoryItems(FOOD_CATEGORIES[Number(toggle.dataset.selectAll)]);
+      const items = getCategoryItems(FOOD_CATEGORIES[Number(toggle.dataset.selectAll)]).filter(food => !lockedFoods.has(food));
       const selectAll = toggle.getAttribute('aria-checked') !== 'true';
       items.forEach(food => {
         if (selectAll) state.restrictions[food] = true;
@@ -678,11 +732,12 @@ function getGenerationInput() {
     weight: state.weight,
     weightUnit: state.weightUnit,
     protocols: [...state.protocols],
-    restrictions: restrictedFoods(),
+    restrictions: restrictedFoods().filter(food => !getProtocolAvoids(state.protocols, FOOD_CATEGORIES).has(food)),
     cookingSkill: state.cookingSkill,
     cookingTime: state.cookingTime,
     servings: state.baseServings,
     includeSnack: state.mealsPerDay === 4,
+    includeSmoothies: state.includeSmoothies !== false,
     macroTargets: state.macroMode === 'targets' ? computeMacroTargets() : null
   };
 }
@@ -931,7 +986,14 @@ function renderPlanPanel() {
 function renderPreview() {
   if (!hasPlan()) return renderPlanPanel();
   const restrictions = restrictedFoods();
+  const warnings = state.planData.warnings || [];
   return `
+    ${warnings.length ? `
+      <details class="plan-warnings">
+        <summary><span aria-hidden="true">⚠</span> Double-check ${warnings.length} item${warnings.length === 1 ? '' : 's'} before cooking</summary>
+        <p>Our automatic review flagged ${warnings.length === 1 ? 'this' : 'these'} after asking the AI to correct ${warnings.length === 1 ? 'it' : 'them'}. Swap the ingredient or adjust portions as needed.</p>
+        <ul>${warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>
+      </details>` : ''}
     ${renderMacroBar()}
 
     <div class="preview-toolbar">

@@ -8,9 +8,14 @@
 import Anthropic from '@anthropic-ai/sdk';
 import foods from '../../data/foods.js';
 import protocols from '../../data/protocols.js';
+import { buildMatchers, findViolations } from './compliance.mjs';
 
-const { getAllFoodNames } = foods;
-const { getProtocol, getIncompatiblePairs } = protocols;
+const { getAllFoodNames, FOOD_CATEGORIES } = foods;
+const { getProtocol, getIncompatiblePairs, getProtocolAvoids } = protocols;
+
+// Protocols where low carbohydrate intake is the point (or that are formula-based)
+const LOW_CARB_PROTOCOLS = ['Keto', 'Carnivore', "Lion's Diet"];
+const NO_SMOOTHIE_PROTOCOLS = ['Carnivore', "Lion's Diet", 'Elemental'];
 
 export const MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 10000;
@@ -123,6 +128,7 @@ export function validateInput(raw) {
     cookingTime: raw.cookingTime,
     servings,
     includeSnack: raw.includeSnack === true,
+    includeSmoothies: raw.includeSmoothies !== false,
     macroTargets: validateMacroTargets(raw.macroTargets)
   };
 }
@@ -138,6 +144,53 @@ Protocol adherence is non-negotiable:
 - Never suggest substitutions that would break a rule.
 
 Respond ONLY with raw JSON. No markdown. No backticks. No explanation.`;
+
+// Foods the selected protocols rule out (food name → protocol names)
+function protocolAvoidMap(input) {
+  return getProtocolAvoids(input.protocols, FOOD_CATEGORIES);
+}
+
+const isElemental = input => input.protocols.includes('Elemental');
+const isLowCarb = input => input.protocols.some(p => LOW_CARB_PROTOCOLS.includes(p));
+
+// Daily energy each plan day should provide, per person
+export function energyTarget(input) {
+  if (input.macroTargets) return input.macroTargets.calories;
+  const lbs = input.weightUnit === 'kg' ? input.weight * 2.20462 : input.weight;
+  return Math.min(2800, Math.max(1600, Math.round((lbs * 13) / 50) * 50)); // ~maintenance, never below 1,600
+}
+
+function nutritionLines(input) {
+  if (isElemental(input)) return [];
+  const energy = energyTarget(input);
+  const lines = [
+    '',
+    'NUTRITION ADEQUACY (critical — these clients are often depleted, and under-eating harms hormones, thyroid function and recovery):'
+  ];
+  if (input.macroTargets) {
+    lines.push('- Hit the daily macro targets above; they set the calories and carbohydrates for each day.');
+  } else {
+    lines.push(`- Each day must provide about ${energy.toLocaleString('en-US')} calories per person (never below ${Math.round(energy * 0.85).toLocaleString('en-US')}). This is not a weight-loss plan.`);
+    if (!isLowCarb(input)) {
+      const carbs = Math.round((energy * 0.4) / 4 / 5) * 5;
+      lines.push(`- This is NOT a low-carb plan: aim for about ${carbs} g of carbohydrates per day (roughly 40% of calories) from compliant whole foods.`);
+    }
+  }
+  if (!isLowCarb(input)) {
+    lines.push('- Include a compliant starch or fresh fruit at every meal — e.g. sweet potato, cassava/yuca, plantain, taro, winter squash, root vegetables, white rice or quinoa where allowed, and fresh (not dried) fruit where allowed. Non-starchy vegetables alone are not enough carbohydrate.');
+  }
+  lines.push('- Every main meal has a generous protein portion (about 25–40 g protein per serving) and enough healthy fat to be satisfying.');
+  return lines;
+}
+
+function smoothieLines(input) {
+  if (input.protocols.some(p => NO_SMOOTHIE_PROTOCOLS.includes(p))) return [];
+  if (!input.includeSmoothies) return ['- Do not include smoothies.'];
+  return [
+    `- Make 2–3 of the week's ${input.includeSnack ? 'breakfasts or snacks' : 'breakfasts'} quick blended smoothies (prep_time about "5 min", cook_time "0 min") built only from compliant ingredients.`,
+    '- Each smoothie must be a real meal: a compliant liquid base, fresh or frozen fruit where allowed, greens, a healthy fat, and a compliant protein source (aim for 20 g+ protein — e.g. collagen or a compliant protein powder only if every selected protocol allows it).'
+  ];
+}
 
 function profileBlock(input, days) {
   const lines = [];
@@ -158,9 +211,16 @@ function profileBlock(input, days) {
     protocol.rules.forEach(rule => lines.push(`  - ${rule}`));
     if (protocol.note) lines.push(`  - NOTE: ${protocol.note}`);
   }
+  const avoids = protocolAvoidMap(input);
+  if (avoids.size) {
+    lines.push('');
+    lines.push('FOODS THE SELECTED PROTOCOLS RULE OUT — never use any of these, in any form (including oils, flours, sauces, powders, broths and garnishes):');
+    lines.push([...avoids.keys()].join(', '));
+  }
+  const personal = input.restrictions.filter(food => !avoids.has(food));
   lines.push('');
-  lines.push(input.restrictions.length
-    ? `PERSONAL RESTRICTIONS — never use these in any form, even if a protocol normally allows them: ${input.restrictions.join(', ')}`
+  lines.push(personal.length
+    ? `PERSONAL RESTRICTIONS — never use these in any form, even if a protocol normally allows them: ${personal.join(', ')}`
     : 'PERSONAL RESTRICTIONS: none beyond the protocol rules.');
   lines.push('');
   lines.push('COOKING');
@@ -181,6 +241,9 @@ function profileBlock(input, days) {
     lines.push('- Protocol rules always win: if a target conflicts with a protocol (for example carbs on Keto or Carnivore), follow the protocol and get as close as you can.');
     lines.push('- Report macros accurately for the recipe as written — never adjust the numbers to look on-target.');
   }
+  lines.push(...nutritionLines(input));
+  const smoothies = smoothieLines(input);
+  if (smoothies.length) lines.push('', 'SMOOTHIES', ...smoothies);
   return lines.join('\n');
 }
 
@@ -433,13 +496,109 @@ function groceryValidator(parsed) {
    onProgress(stepIndex) is called as each step starts:
      0 applying protocol rules · 1 filtering restrictions · 2 Mon–Thu · 3 Fri–Sun · 4 grocery list
    ========================================================================== */
+/* ==========================================================================
+   Review — catch excluded foods and under-fuelled days, then ask for one revision
+   ========================================================================== */
+const MEAL_NAMES = { breakfast: 'breakfast', lunch: 'lunch', dinner: 'dinner', snack: 'snack' };
+
+function reviewDays(days, input, matchers) {
+  const issues = [];
+  for (const v of findViolations(days, matchers)) {
+    issues.push(`${v.day} ${MEAL_NAMES[v.slot] || v.slot} ("${v.meal}") uses "${v.ingredient}", but ${v.food} is excluded.`);
+  }
+  if (!isElemental(input)) {
+    const energy = energyTarget(input);
+    const t = input.macroTargets;
+    for (const day of days) {
+      if (day.daily_calories < energy * 0.85) {
+        issues.push(`${day.day} totals only ${day.daily_calories} calories per person; it needs about ${energy}. Increase portions and add compliant starches, fruit and fats.`);
+      }
+      if (t) {
+        if (day.daily_protein_g < t.protein_g * 0.85) issues.push(`${day.day} has ${day.daily_protein_g} g protein; the target is ${t.protein_g} g.`);
+        if (Math.abs(day.daily_carbs_g - t.carbs_g) > t.carbs_g * 0.2 && Math.abs(day.daily_carbs_g - t.carbs_g) > 15) issues.push(`${day.day} has ${day.daily_carbs_g} g carbs; the target is ${t.carbs_g} g.`);
+        if (Math.abs(day.daily_fat_g - t.fat_g) > t.fat_g * 0.2 && Math.abs(day.daily_fat_g - t.fat_g) > 10) issues.push(`${day.day} has ${day.daily_fat_g} g fat; the target is ${t.fat_g} g.`);
+      } else if (!isLowCarb(input) && day.daily_carbs_g < 100) {
+        issues.push(`${day.day} has only ${day.daily_carbs_g} g carbohydrates; add a compliant starch or fresh fruit to every meal (aim for about ${Math.round((energy * 0.4) / 4)} g).`);
+      }
+    }
+  }
+  return issues;
+}
+
+// Writes a set of days, then reviews them; if anything is off, asks Claude once to fix
+// exactly those problems. Whatever still fails is returned as warnings for the coach.
+async function writeDays(input, days, prompt, label, matchers) {
+  const validate = daysValidator(days, input);
+  let result = await callForJson(prompt, label, validate);
+  let issues = reviewDays(result, input, matchers);
+
+  if (issues.length) {
+    console.warn(`[meal-plan] ${label}: ${issues.length} issue(s), requesting a revision`);
+    const revisionPrompt = `${prompt}
+
+YOUR PREVIOUS DRAFT OF THESE DAYS HAD THESE PROBLEMS — rewrite the days so every one is fixed, keeping everything else that was right:
+${issues.map(issue => `- ${issue}`).join('\n')}
+
+Previous draft (for reference):
+${JSON.stringify(result)}`;
+    try {
+      const revised = await callForJson(revisionPrompt, `revising ${label.replace(/^writing /, '')}`, validate);
+      const revisedIssues = reviewDays(revised, input, matchers);
+      if (revisedIssues.length <= issues.length) {
+        result = revised;
+        issues = revisedIssues;
+      }
+    } catch (err) {
+      console.warn(`[meal-plan] ${label}: revision failed, keeping first draft`, err.message);
+    }
+  }
+  return { days: result, unresolved: issues.length };
+}
+
+// Short, grouped list of whatever the review still flags in the final plan
+function summarizeWarnings(days, input, matchers) {
+  const warnings = [];
+  const byFood = new Map();
+  for (const v of findViolations(days, matchers)) {
+    byFood.set(v.food, [...(byFood.get(v.food) || []), `${v.day} ${MEAL_NAMES[v.slot] || v.slot} ("${v.ingredient}")`]);
+  }
+  for (const [food, places] of byFood) {
+    const shown = places.slice(0, 6).join('; ') + (places.length > 6 ? `; and ${places.length - 6} more` : '');
+    warnings.push(`${food} should be avoided but appears in ${places.length} meal${places.length === 1 ? '' : 's'}: ${shown}.`);
+  }
+  if (!isElemental(input)) {
+    const energy = energyTarget(input);
+    const lowCalories = days.filter(d => d.daily_calories < energy * 0.85);
+    if (lowCalories.length) {
+      warnings.push(`Below the ~${energy.toLocaleString('en-US')} calorie target on ${lowCalories.map(d => `${d.day} (${d.daily_calories.toLocaleString('en-US')})`).join(', ')} — consider larger portions or an extra snack.`);
+    }
+    if (!input.macroTargets && !isLowCarb(input)) {
+      const lowCarbs = days.filter(d => d.daily_carbs_g < 100);
+      if (lowCarbs.length) {
+        warnings.push(`Low in carbohydrates on ${lowCarbs.map(d => `${d.day} (${d.daily_carbs_g} g)`).join(', ')} — add a compliant starch or fresh fruit.`);
+      }
+    }
+    const t = input.macroTargets;
+    if (t) {
+      const lowProtein = days.filter(d => d.daily_protein_g < t.protein_g * 0.85);
+      if (lowProtein.length) warnings.push(`Below the ${t.protein_g} g protein target on ${lowProtein.map(d => `${d.day} (${d.daily_protein_g} g)`).join(', ')}.`);
+    }
+  }
+  return warnings;
+}
+
 export async function generatePlan(input, onProgress = async () => {}) {
+  const avoided = [...protocolAvoidMap(input).keys(), ...input.restrictions];
+  const matchers = buildMatchers(avoided);
+
   await onProgress(2);
-  const partOne = await callForJson(daysPrompt(input, DAYS_PART_1), 'writing Monday–Thursday recipes', daysValidator(DAYS_PART_1, input));
+  const one = await writeDays(input, DAYS_PART_1, daysPrompt(input, DAYS_PART_1), 'writing Monday–Thursday recipes', matchers);
+  const partOne = one.days;
 
   await onProgress(3);
   const usedNames = partOne.flatMap(day => Object.values(day.meals).map(meal => meal.name));
-  const partTwo = await callForJson(daysPrompt(input, DAYS_PART_2, usedNames), 'writing Friday–Sunday recipes', daysValidator(DAYS_PART_2, input));
+  const two = await writeDays(input, DAYS_PART_2, daysPrompt(input, DAYS_PART_2, usedNames), 'writing Friday–Sunday recipes', matchers);
+  const partTwo = two.days;
 
   const days = [...partOne, ...partTwo];
 
@@ -450,6 +609,7 @@ export async function generatePlan(input, onProgress = async () => {}) {
     days,
     grocery_list: extras.grocery_list,
     protocol_notes: extras.protocol_notes,
+    warnings: one.unresolved || two.unresolved ? summarizeWarnings(days, input, matchers) : [],
     generated_at: new Date().toISOString(),
     model: MODEL
   };

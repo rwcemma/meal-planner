@@ -141,7 +141,7 @@ const FOOD_CATEGORIES = [
     subgroups: null,
     items: [
       'Almonds', 'Cashews', 'Walnuts', 'Pecans', 'Macadamia nuts', 'Pistachios',
-      'Brazil nuts', 'Hazelnuts', 'Pine nuts', 'Sunflower seeds', 'Pumpkin seeds',
+      'Brazil nuts', 'Hazelnuts', 'Pine nuts', 'Peanuts', 'Sunflower seeds', 'Pumpkin seeds',
       'Flax seeds', 'Chia seeds', 'Hemp seeds', 'Sesame seeds/Tahini', 'Nut butters (all)'
     ]
   },

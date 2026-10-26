@@ -45,11 +45,11 @@ const PROTOCOLS = [
     description: 'Eliminates sugar and yeast to reduce candida overgrowth',
     rules: [
       'No sugar or caloric sweeteners of any kind (including honey, maple syrup, coconut sugar, agave, molasses, dates); stevia or monk fruit only.',
-      'No fruit except lemon, lime, and small portions of berries; no dried fruit or juice.',
+      'Fruit limited to fresh, low-sugar options in modest portions (berries, green apple, lemon, lime); no dried fruit or juice.',
       'No yeast or yeast-fermented foods: bread, nutritional or brewer\'s yeast, alcohol, vinegars other than apple cider vinegar.',
       'No mushrooms, peanuts, aged cheeses, or other mold-prone foods.',
-      'No gluten grains; limit starchy vegetables and gluten-free grains to small portions.',
-      'Emphasize non-starchy vegetables, quality protein, healthy fats, garlic, ginger, and coconut oil.'
+      'No gluten grains. Moderate portions of compliant starches are encouraged at most meals (sweet potato, winter squash, cassava, plantain, root vegetables) so energy and carbohydrate intake stay adequate.',
+      'Emphasize vegetables, quality protein, healthy fats, garlic, ginger, and coconut oil.'
     ]
   },
   {
@@ -188,7 +188,7 @@ const PROTOCOLS = [
       'No foods prone to mold or mycotoxins: peanuts, corn, pistachios, cashews, dried fruit, aged cheese, mushrooms.',
       'No fermented foods, vinegars, alcohol, or yeast.',
       'No coffee unless the client uses a mold-tested brand.',
-      'No sugar or sweeteners that feed fungal growth; minimal fruit (low-sugar options only).',
+      'No added sugar or sweeteners that feed fungal growth; fresh, low-sugar fruit in modest portions is fine (berries, green apple, citrus) — no dried fruit or juice.',
       'No grains stored long-term (wheat, barley, rye, corn); limit others.',
       'Use fresh produce washed well, cooked fresh, with no leftovers older than 24 hours.'
     ]
@@ -246,6 +246,18 @@ const PROTOCOLS = [
     ]
   },
   {
+    name: 'Paleo',
+    icon: '🦴',
+    description: 'Ancestral whole foods — meat, fish, vegetables, fruit, nuts',
+    rules: [
+      'No grains or pseudo-grains (wheat, rice, corn, oats, quinoa) and no flours made from them.',
+      'No legumes, including peanuts, soy, beans, lentils, and peas.',
+      'No dairy except grass-fed butter and ghee.',
+      'No refined sugar, industrial seed oils, or processed foods; small amounts of honey or maple syrup are fine.',
+      'Emphasize meat, poultry, fish, eggs, vegetables, starchy tubers (sweet potato, cassava, plantain), fresh fruit, nuts, seeds, and healthy fats.'
+    ]
+  },
+  {
     name: 'SIBO',
     icon: '🦠',
     description: 'Small intestinal bacterial overgrowth — low-fermentation',
@@ -273,6 +285,166 @@ const PROTOCOLS = [
 ];
 
 // Pairs whose combined allowed-food list is effectively empty (e.g. animal-only vs plants-only).
+// Foods from data/foods.js each protocol rules out. These are locked on the Food
+// Restrictions screen, sent to Claude as hard exclusions, and checked after generation.
+// '@Category' or '@Category:Subgroup' expands to every food in it; `allowOnly` lists the
+// only foods a protocol permits (everything else is excluded).
+const DAIRY = ["Cow's milk", "Goat's milk", "Sheep's milk", "Camel's milk", 'Butter', 'Ghee', 'Heavy cream', 'Cream cheese', 'Hard cheese', 'Soft cheese', 'Yogurt (dairy)', 'Kefir'];
+const EGGS = ['Eggs (whole)', 'Egg yolks', 'Egg whites'];
+const GLUTEN = ['@Grains & Starches:Gluten-Containing Grains', 'Wheat flour', 'Whole wheat flour', 'Spelt flour', 'Rye flour', 'Barley flour'];
+const ALL_GRAINS = ['@Grains & Starches:Gluten-Free Grains', ...GLUTEN, 'Oat flour', 'Rice flour', 'Buckwheat flour', 'Sorghum flour', 'Gluten-free flour blends'];
+const VINEGARS = ['Apple cider vinegar', 'Balsamic vinegar', 'Red wine vinegar', 'White wine vinegar', 'Rice vinegar'];
+const SUGARS = ['Honey', 'Maple syrup', 'Coconut sugar', 'Brown sugar', 'Molasses', 'Dates/Date sugar', 'Agave'];
+const SHELLFISH = ['Shrimp', 'Scallops', 'Crab', 'Lobster', 'Oysters', 'Mussels', 'Clams'];
+const BEANS = ['Black beans', 'Kidney beans', 'Pinto beans', 'Navy beans', 'Cannellini/White beans', 'Great northern beans', 'Lima/Butter beans', 'Black-eyed peas', 'Split peas', 'Hummus'];
+const LOW_HISTAMINE_AVOIDS = [
+  'Hard cheese', 'Yogurt (dairy)', 'Kefir', 'Kefir (water)', 'Miso', 'Tempeh', 'Soy sauce/Tamari', 'Fish sauce', 'Worcestershire sauce',
+  'Oyster sauce', 'Teriyaki sauce', ...VINEGARS, 'Ketchup', 'Mustard (all)', 'Hot sauce', 'Buffalo sauce', 'BBQ sauce', 'Pesto', 'Olives',
+  'Sardines', 'Tuna', 'Mackerel', 'Anchovies', 'Herring', ...SHELLFISH, 'Tomatoes', 'Spinach', 'Eggplant', 'Avocado', 'Strawberries',
+  'Oranges', 'Lemons', 'Limes', 'Grapefruit', 'Tangerines/Mandarins', 'Lemon/Lime juice', 'Pineapple', 'Papaya', 'Bananas',
+  'Dried fruits (all)', 'Cocoa/Cacao powder', 'Walnuts', 'Cashews', 'Peanuts', 'Black tea', 'Green tea', 'Bone broth',
+  'Salsa/Pico de gallo', 'Marinara/Tomato sauce'
+];
+const LOW_FODMAP_AVOIDS = [
+  'Garlic', 'Onion', 'Shallots', 'Garlic powder', 'Onion powder', ...GLUTEN, ...BEANS, "Cow's milk", "Goat's milk", "Sheep's milk",
+  'Soft cheese', 'Yogurt (dairy)', 'Apples', 'Pears', 'Mango', 'Watermelon', 'Cherries', 'Peaches', 'Plums', 'Nectarines', 'Apricots',
+  'Dried fruits (all)', 'Dates', 'Figs', 'Persimmons', 'Honey', 'Agave', 'Xylitol', 'Erythritol', 'Cauliflower', 'Mushrooms',
+  'Asparagus', 'Artichoke', 'Cashews', 'Pistachios', 'Cashew milk'
+];
+
+const PROTOCOL_AVOIDS = {
+  AIP: {
+    avoids: [
+      ...ALL_GRAINS, '@Legumes', ...DAIRY, ...EGGS, '@Nuts & Seeds', '@Vegetables:Nightshades', 'White potato', 'Peas', 'Green beans',
+      'Seed-based spices (cumin/coriander/mustard seed)', 'Nightshade spices (paprika/cayenne)', 'Coffee', 'Cocoa/Cacao powder',
+      'Seed oils (canola/soy/sunflower)', 'Sesame oil', 'Stevia', 'Monk fruit', 'Erythritol', 'Xylitol', 'Brown sugar',
+      'Almond flour', 'Almond meal', 'Chickpea flour', 'Ground flax', 'Chia seeds', 'Almond milk', 'Oat milk', 'Cashew milk',
+      'Mayonnaise/Aioli', 'Ketchup', 'BBQ sauce', 'Salsa/Pico de gallo', 'Marinara/Tomato sauce', 'Pesto', 'Mustard (all)',
+      'Hot sauce', 'Buffalo sauce', 'Chili oil', 'Soy sauce/Tamari', 'Teriyaki sauce'
+    ]
+  },
+  Baseline: { avoids: ['Seed oils (canola/soy/sunflower)', 'Brown sugar'] },
+  Candida: {
+    avoids: [
+      ...SUGARS, 'Dried fruits (all)', 'Dates', 'Figs', 'Bananas', 'Grapes', 'Mango', 'Pineapple', 'Persimmons', 'Lychee',
+      'Mushrooms', 'Peanuts', 'Hard cheese', 'Balsamic vinegar', 'Red wine vinegar', 'White wine vinegar', 'Rice vinegar', ...GLUTEN,
+      'Ketchup', 'BBQ sauce', 'Teriyaki sauce', 'Soy sauce/Tamari', 'Miso', 'Coconut water', 'Kefir (water)'
+    ]
+  },
+  Carnivore: {
+    allowOnly: ['@Meats', '@Fish & Seafood', ...EGGS, 'Butter', 'Ghee', 'Heavy cream', 'Hard cheese', 'Beef tallow/Lard', 'Salt', 'Bone broth', 'Gelatin']
+  },
+  Elemental: { avoids: [] }, // formula-based; handled by its rules
+  GAPS: {
+    avoids: [
+      ...ALL_GRAINS, '@Grains & Starches:Starches', 'Yam', 'Parsnips', 'Cassava flour', 'Tapioca flour/starch', 'Arrowroot flour/starch',
+      'Chickpea flour', 'Maple syrup', 'Coconut sugar', 'Brown sugar', 'Molasses', 'Agave', 'Soy (all forms)', 'Tofu', 'Tempeh', 'Miso',
+      'Edamame', 'Black beans', 'Kidney beans', 'Pinto beans', 'Cannellini/White beans', 'Great northern beans', 'Lima/Butter beans',
+      'Chickpeas/Garbanzo', 'Black-eyed peas', 'Hummus', 'Pea protein', "Cow's milk", "Goat's milk", "Sheep's milk", "Camel's milk",
+      'Cream cheese', 'Seed oils (canola/soy/sunflower)', 'Oat milk'
+    ]
+  },
+  Halal: { avoids: ['Pork'] },
+  Keto: {
+    avoids: [
+      ...ALL_GRAINS, '@Grains & Starches:Starches', 'Yam', 'Peas', ...BEANS, 'Chickpeas/Garbanzo', 'Lentils (all)', 'Bananas', 'Grapes',
+      'Mango', 'Pineapple', 'Dates', 'Figs', 'Dried fruits (all)', 'Persimmons', 'Lychee', 'Apples', 'Pears', 'Oranges',
+      'Tangerines/Mandarins', 'Cherries', ...SUGARS, 'Xylitol', 'Tapioca flour/starch', 'Arrowroot flour/starch', 'Cassava flour',
+      'Chickpea flour', 'Oat milk', 'Coconut water', 'Ketchup', 'BBQ sauce', 'Teriyaki sauce'
+    ]
+  },
+  Kosher: { avoids: ['Pork', 'Rabbit', ...SHELLFISH] },
+  "Lion's Diet": { allowOnly: ['Beef', 'Organ meats (liver/heart/kidney)', 'Beef tallow/Lard', 'Salt'] },
+  'Low-FODMAP': { avoids: LOW_FODMAP_AVOIDS },
+  'Low-Glycemic': {
+    avoids: ['White rice', 'Jasmine/Basmati rice', 'White potato', 'Bread (all)', 'Pasta (wheat)', 'Brown sugar', 'Dried fruits (all)', 'Wheat flour', 'Rice flour']
+  },
+  'Low-Histamine': { avoids: LOW_HISTAMINE_AVOIDS },
+  'Low-Mold': {
+    avoids: [
+      'Peanuts', 'Corn', 'Cornmeal/Polenta', 'Pistachios', 'Cashews', 'Dried fruits (all)', 'Dates', 'Hard cheese', 'Mushrooms',
+      ...VINEGARS, ...SUGARS, ...GLUTEN, 'Miso', 'Soy sauce/Tamari', 'Tempeh', 'Kefir', 'Kefir (water)', 'Yogurt (dairy)', 'Ketchup',
+      'Worcestershire sauce'
+    ]
+  },
+  'Low-Oxalate': {
+    avoids: [
+      'Spinach', 'Swiss chard', 'Beets', 'Okra', 'Sweet potato', 'Almonds', 'Almond flour', 'Almond meal', 'Almond milk', 'Cashews',
+      'Cashew milk', 'Peanuts', 'Sesame seeds/Tahini', 'Chia seeds', 'Buckwheat', 'Buckwheat flour', 'Buckwheat noodles', 'Quinoa',
+      'Amaranth', 'Soy (all forms)', 'Tofu', 'Navy beans', 'Cocoa/Cacao powder', 'Black tea', 'Turmeric', 'Raspberries', 'Blackberries',
+      'Kiwi', 'Figs', 'Dates'
+    ]
+  },
+  'Low-Salicylate': {
+    avoids: [
+      'Blueberries', 'Strawberries', 'Raspberries', 'Blackberries', 'Cherries', 'Grapes', 'Oranges', 'Grapefruit', 'Tangerines/Mandarins',
+      'Lemons', 'Limes', 'Lemon/Lime juice', 'Apricots', 'Pineapple', 'Dates', 'Dried fruits (all)', 'Apples', 'Peaches', 'Plums',
+      'Nectarines', 'Tomatoes', 'Bell peppers', 'Hot peppers', 'Zucchini', 'Cucumber', 'Radishes', 'Olives', 'Avocado', 'Black pepper',
+      'Nightshade spices (paprika/cayenne)', 'Seed-based spices (cumin/coriander/mustard seed)',
+      'Fresh herbs (parsley/basil/cilantro/rosemary/thyme)', 'Cinnamon', 'Turmeric', 'Mint', 'Dill', 'Oregano', 'Sage', 'Tarragon',
+      'Cloves', 'Coffee', 'Black tea', 'Green tea', 'Herbal teas', 'Honey', 'Almonds', 'Walnuts', 'Pecans', 'Macadamia nuts',
+      'Pistachios', 'Brazil nuts', 'Hazelnuts', 'Pine nuts', 'Almond flour', 'Almond meal', 'Almond milk', 'Olive oil', 'Coconut oil',
+      'Mustard (all)', 'Ketchup', 'Salsa/Pico de gallo', 'Marinara/Tomato sauce', 'Pesto', 'Hot sauce', 'Worcestershire sauce'
+    ]
+  },
+  'Low-Sulfur': {
+    avoids: [
+      'Garlic', 'Onion', 'Leeks', 'Shallots', 'Chives', 'Garlic powder', 'Onion powder', '@Vegetables:Cruciferous', 'Kale', 'Bok choy',
+      'Collard greens', 'Arugula', 'Watercress', 'Mustard greens', 'Napa cabbage', 'Radishes', 'Daikon radish', 'Turnips', ...EGGS,
+      '@Legumes', 'Dried fruits (all)', 'Red wine vinegar', 'White wine vinegar', 'Balsamic vinegar', 'Molasses'
+    ]
+  },
+  MCAS: { avoids: [...LOW_HISTAMINE_AVOIDS, 'Hot peppers', 'Nightshade spices (paprika/cayenne)', 'Chili oil'] },
+  Paleo: {
+    avoids: [
+      ...ALL_GRAINS, '@Legumes', 'Peas', "Cow's milk", "Goat's milk", "Sheep's milk", "Camel's milk", 'Heavy cream', 'Cream cheese',
+      'Hard cheese', 'Soft cheese', 'Yogurt (dairy)', 'Kefir', 'Chickpea flour', 'Brown sugar', 'Seed oils (canola/soy/sunflower)',
+      'Oat milk', 'Soy sauce/Tamari', 'Teriyaki sauce', 'Ketchup', 'BBQ sauce'
+    ]
+  },
+  SIBO: {
+    avoids: [
+      ...LOW_FODMAP_AVOIDS, 'Kefir', 'Yogurt (dairy)', 'Kefir (water)', 'Miso', 'Tempeh', 'Coconut sugar', 'Brown sugar', 'Molasses',
+      'Dates/Date sugar'
+    ]
+  },
+  WFPB: {
+    avoids: [
+      '@Meats', '@Fish & Seafood', '@Eggs & Dairy', 'Beef tallow/Lard', 'Bone broth', 'Gelatin', 'Honey', 'Fish sauce', 'Oyster sauce',
+      'Worcestershire sauce', 'Mayonnaise/Aioli', 'Pesto'
+    ]
+  }
+};
+
+// Expands '@Category' / '@Category:Subgroup' references against FOOD_CATEGORIES
+function expandFoodRefs(refs, categories) {
+  const out = [];
+  for (const ref of refs) {
+    if (!ref.startsWith('@')) { out.push(ref); continue; }
+    const [categoryName, subgroupName] = ref.slice(1).split(':');
+    const category = categories.find(c => c.name === categoryName);
+    if (!category) continue;
+    if (subgroupName) out.push(...(category.subgroups || []).find(g => g.name === subgroupName)?.items || []);
+    else out.push(...(category.subgroups ? category.subgroups.flatMap(g => g.items) : category.items));
+  }
+  return out;
+}
+
+// Map of food name → protocols that rule it out, for the selected protocols
+function getProtocolAvoids(selectedNames, categories) {
+  const allFoods = [...new Set(categories.flatMap(c => (c.subgroups ? c.subgroups.flatMap(g => g.items) : c.items)))];
+  const avoids = new Map();
+  for (const name of selectedNames) {
+    const entry = PROTOCOL_AVOIDS[name];
+    if (!entry) continue;
+    const foods = entry.allowOnly
+      ? allFoods.filter(food => !new Set(expandFoodRefs(entry.allowOnly, categories)).has(food))
+      : expandFoodRefs(entry.avoids, categories);
+    for (const food of new Set(foods)) avoids.set(food, [...(avoids.get(food) || []), name]);
+  }
+  return avoids;
+}
+
 const INCOMPATIBLE_PROTOCOLS = [
   ['Carnivore', 'WFPB'],
   ["Lion's Diet", 'WFPB']
@@ -289,5 +461,5 @@ function getIncompatiblePairs(selectedNames) {
 
 // Also loadable by the Netlify Functions (prompt building + validation); ignored in the browser.
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { PROTOCOLS, INCOMPATIBLE_PROTOCOLS, getProtocol, getIncompatiblePairs };
+  module.exports = { PROTOCOLS, INCOMPATIBLE_PROTOCOLS, PROTOCOL_AVOIDS, getProtocol, getIncompatiblePairs, getProtocolAvoids, expandFoodRefs };
 }

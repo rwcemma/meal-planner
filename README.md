@@ -64,7 +64,12 @@ Generation runs as a Netlify **background function** because three full-recipe C
 - The results screen shows the targets at the top and marks each day's totals with ✓ (on target) or the gap. **Adjust targets** rebuilds the plan with new numbers.
 - The Zap also receives a `macroTargets` summary line, or an empty string if no targets were set.
 
-**Clinical review:** the per-protocol rules in `data/protocols.js` are sent to Claude word for word. Have the clinical team review and edit them so they match RWC's own protocol handouts.
+**Protocol avoid lists:** `PROTOCOL_AVOIDS` in `data/protocols.js` lists the foods each protocol rules out, such as Low-Mold → peanuts and cashews, or Low-Histamine → spinach and tomatoes. These foods are applied in three places:
+- They show as locked 🔒 chips on the restrictions screen, so clients don't have to tick them.
+- They are sent to Claude as a hard exclusion list.
+- They are checked again after generation (`netlify/lib/compliance.mjs`). The same check covers calories, carbs and macro targets. If a day breaks a rule, Claude gets one revision pass. Anything still unresolved appears to the coach as "Double-check N items" on the results screen.
+
+**Clinical review:** the per-protocol rules and avoid lists in `data/protocols.js` are sent to Claude word for word. Have the clinical team review and edit them so they match RWC's own protocol handouts.
 
 ## Data and limits
 
