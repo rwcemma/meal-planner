@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — plan generation (browser side)
+// Meal Plan Generator — plan generation (browser side)
 //
 // The Claude API key lives only on the server. The prompts, the 3 sequential Claude
 // calls, JSON repair and plan assembly run in a Netlify Background Function

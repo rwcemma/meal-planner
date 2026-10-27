@@ -1,0 +1,76 @@
+{
+  "id": "bb",
+  "appName": "Biohacking Bombshell Meal Plan Generator",
+  "orgName": "Biohacking Bombshell",
+  "logoAlt": "Biohacking Bombshell",
+  "metaDescription": "Personalized 7-day meal plans from Biohacking Bombshell Virtual Health Clinic.",
+  "storageKey": "bb-meal-planner-state",
+  "googleFonts": "https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,700&display=swap",
+
+  "heroEyebrow": "Virtual Health Clinic",
+  "heroTitle": "Your personalized meal plan ",
+  "heroAccent": "starts here.",
+  "emailConsent": "We'll email your plan here and may follow up with helpful resources from Biohacking Bombshell. Unsubscribe anytime.",
+
+  "logos": {
+    "header": "brand/logo.png",
+    "hero": "brand/logo-white.png",
+    "pdfColor": "brand/logo.png",
+    "pdfWhite": "brand/logo-white.png",
+    "favicon": "brand/favicon.png",
+    "ratio": 0.442968,
+    "headerWidth": 90,
+    "heroWidth": 220
+  },
+
+  "pdf": {
+    "author": "Biohacking Bombshell Virtual Health Clinic",
+    "signature": "Biohacking Bombshell  ·  biohackingbombshell.com",
+    "coverEyebrow": "Virtual Health Clinic",
+    "coverTagline": "Nourish your body. Clear the load.",
+    "ctaHeadline": "Questions? ",
+    "ctaAccent": "Reach out to your care team.",
+    "ctaBody": "Your practitioner can adjust this plan as your body heals and your protocol changes.",
+    "ctaLabel": "biohackingbombshell.com",
+    "ctaUrl": "https://biohackingbombshell.com",
+    "fonts": {
+      "Body-Light": "Montserrat_300Light.ttf",
+      "Body": "Montserrat_400Regular.ttf",
+      "Body-SemiBold": "Montserrat_600SemiBold.ttf",
+      "Body-Bold": "Montserrat_700Bold.ttf",
+      "Heading": "Montserrat_800ExtraBold.ttf",
+      "Accent": "Montserrat_700Bold_Italic.ttf"
+    },
+    "accentFallback": ["helvetica", "bolditalic"],
+    "colors": {
+      "dark": "#34264f",
+      "darkBright": "#5b2f6e",
+      "darkDeep": "#a52c74",
+      "ink": "#2b2540",
+      "ink2": "#4a4460",
+      "muted": "#8a84a0",
+      "onDarkMuted": "#d9cde6",
+      "accent": "#e5397f",
+      "accentOnDark": "#ff8cbd",
+      "accentDeep": "#a01e60",
+      "accentLight": "#4c8fc0",
+      "accentBorder": "#f8cfe0",
+      "stripeLine": "rgba(255, 255, 255, 0)",
+      "pillFill": "#4a2d63",
+      "pillBorder": "#8a4a8c",
+      "coverRule": "#6b3f7d",
+      "cta": "#e5397f",
+      "ctaText": "#ffffff",
+      "cream": "#fff4f9",
+      "border": "#ece9f2",
+      "red": "#ef4444",
+      "redLight": "#fef2f2",
+      "white": "#ffffff"
+    }
+  },
+
+  "server": {
+    "practice": "Biohacking Bombshell, a women's virtual health clinic",
+    "ghlTag": "meal-plan-lead"
+  }
+}

@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — reports generation progress
+// Meal Plan Generator — reports generation progress
 //
 // GET /api/plan-status?id=<jobId>
 //   404 → job not started yet (or expired)

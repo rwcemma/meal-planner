@@ -1,0 +1,75 @@
+/* ==========================================================================
+   Biohacking Bombshell — overrides for the shared design system (style.css)
+   Matches biohacking-bombshell-estore.webflow.io: night-plum gradients, hot-pink
+   pill buttons, wide-tracked uppercase Montserrat, blue → plum → pink logo gradient.
+   ========================================================================== */
+:root {
+  --navy:        #34264f;
+  --navy-bright: #5b2f6e;
+  --ink:         #2b2540;   /* headings */
+  --ink2:        #4a4460;   /* body text */
+  --muted-soft:  #8a84a0;
+  --accent:      #e5397f;
+  --orange:      #e5397f;   /* calls to action */
+  --orange2:     #b0286f;   /* CTA hover */
+  --cta-hover-text: #ffffff;
+  --cream:       #fff4f9;
+
+  --teal:        #e5397f;
+  --teal-dark:   #a01e60;
+  --aqua:        #f06ba3;
+  --light-aqua:  #f7a8c9;
+  --bg:          #faf6fa;
+  --text:        #2b2540;
+  --muted:       #4a4460;
+  --selected-bg: #fff4f9;
+
+  --accent-rgb:  229, 57, 127;
+  --ink-rgb:     43, 37, 64;
+  --shadow-rgb:  76, 30, 80;
+  --cta-rgb:     229, 57, 127;
+
+  --grad:        linear-gradient(115deg, #34264f 0%, #5b2f6e 55%, #a52c74 100%);
+  --pinstripe:   linear-gradient(transparent, transparent);
+  --teal-strip:  linear-gradient(120deg, #4c8fc0 0%, #6e4e9e 50%, #e5397f 100%);
+
+  --font-body:   'Montserrat', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  --font-accent: 'Montserrat', system-ui, sans-serif;
+
+  --radius-card: 18px;
+  --radius-btn:  40px;
+  --focus: 0 0 0 3px rgba(229, 57, 127, 0.25);
+}
+
+h1, h2, h3, h4 { font-weight: 700; letter-spacing: -0.01em; }
+
+/* Accent words: Montserrat bold italic in pink (lighter pink on dark panels) */
+.accent { font-weight: 700; letter-spacing: -0.01em; }
+.eyebrow { letter-spacing: 0.22em; }
+
+.hero, .macro-result, .gen__mark, .summary-bar, .daily-totals { --accent: #ff8cbd; }
+.hero .eyebrow { color: #ffd7ec; }
+
+/* Landing: Allyssa's photo under the plum scrim, as on the estore hero */
+.hero {
+  background:
+    linear-gradient(100deg, rgba(28, 20, 44, 0.90) 0%, rgba(52, 38, 79, 0.80) 45%, rgba(165, 44, 116, 0.55) 100%),
+    url('hero.jpg') 50% 35% / cover no-repeat,
+    #34264f;
+}
+.hero__title { font-weight: 700; letter-spacing: -0.015em; }
+.hero__sub { opacity: 0.9; color: #f4ecf7; }
+
+.btn { letter-spacing: 0.03em; }
+.btn--primary { font-weight: 700; }
+
+.input::placeholder { color: #a49fb5; }
+.food-chip:hover { background: #fff7fb; }
+
+/* The two-line wordmark needs a little more height than RWC's logo */
+.app-header__logo { height: 44px; }
+.hero__logo { height: 96px; }
+@media (max-width: 599px) {
+  .app-header__logo { height: 36px; }
+  .hero__logo { height: 72px; }
+}

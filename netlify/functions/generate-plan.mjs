@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — starts plan generation (Netlify Background Function)
+// Meal Plan Generator — starts plan generation (Netlify Background Function)
 //
 // POST /api/generate-plan  { jobId, input }
 // Responds 202 immediately; runs the 3 Claude calls (up to 15 min allowed) and

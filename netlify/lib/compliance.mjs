@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — post-generation compliance check
+// Meal Plan Generator — post-generation compliance check
 //
 // Scans every ingredient line for foods the client must avoid (protocol exclusions +
 // personal restrictions). Each food in data/foods.js becomes one or more word-bounded

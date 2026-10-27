@@ -1,35 +1,13 @@
+# One codebase, one Netlify site per brand. Set BRAND in each site's environment
+# variables (rwc = Redefining Wellness Center, bb = Biohacking Bombshell); it picks the
+# front end built into dist/ and the wording/GHL tag the functions use.
 [build]
-  publish = "."
+  command = "node scripts/build.mjs"
+  publish = "dist"
   functions = "netlify/functions"
 
 [functions]
   node_bundler = "esbuild"
-
-# Server code and dependencies live in the repo root (the publish directory), so keep
-# them from being served as static files.
-[[redirects]]
-  from = "/netlify/*"
-  to = "/404"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/node_modules/*"
-  to = "/404"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/package.json"
-  to = "/404"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/package-lock.json"
-  to = "/404"
-  status = 404
-  force = true
 
 # The browser now talks only to this site (/api/*); Claude and Zapier are called
 # server-side, so api.anthropic.com and hooks.zapier.com are no longer needed here.

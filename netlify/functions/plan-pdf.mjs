@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — serves an emailed plan's PDF to the Zap (and the client)
+// Meal Plan Generator — serves an emailed plan's PDF to the Zap (and the client)
 //
 // GET /api/plan-pdf/<id>  → the PDF, for 7 days after it was sent; 404 afterwards.
 

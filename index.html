@@ -3,21 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RWC Meal Plan Generator</title>
-  <meta name="description" content="Personalized 7-day meal plans from Redefining Wellness Center — Dr. Jaban Moore, DC." />
-  <link rel="icon" type="image/png" href="assets/rwc-mark.png" />
+  <title>{{appName}}</title>
+  <meta name="description" content="{{metaDescription}}" />
+  <link rel="icon" type="image/png" href="{{logos.favicon}}" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,900&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  <link href="{{googleFonts}}" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="brand/brand.css" />
 </head>
 <body>
   <!-- Persistent header (hidden on Screen 0 via JS; back button hidden on Screens 0 and 9) -->
   <header class="app-header" id="appHeader" hidden>
     <div class="app-header__inner">
       <div class="app-header__left">
-        <img src="assets/rwc-logo.png" alt="Redefining Wellness Centers" class="app-header__logo" width="112" height="40" />
+        <img src="{{logos.header}}" alt="{{logoAlt}}" class="app-header__logo" width="{{logos.headerWidth}}" height="40" />
       </div>
       <h1 class="app-header__title" id="stepTitle" aria-live="polite"></h1>
       <div class="app-header__right">
@@ -37,7 +38,7 @@
   </main>
 
   <noscript>
-    <p style="padding:24px;font-family:Poppins,Arial,sans-serif;font-size:18px;">
+    <p style="padding:24px;font-family:Arial,sans-serif;font-size:18px;">
       This meal plan generator requires JavaScript. Please enable it and reload the page.
     </p>
   </noscript>
@@ -46,7 +47,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
-  <!-- App data -->
+  <!-- Brand config (window.BRAND, written by scripts/build.mjs), then app data -->
+  <script src="brand/brand.js"></script>
   <script src="data/foods.js"></script>
   <script src="data/protocols.js"></script>
 

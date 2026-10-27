@@ -1,23 +1,44 @@
-# RWC Meal Plan Generator
+# Meal Plan Generator
 
-A quiz-style web app for **Redefining Wellness Center / Dr. Jaban Moore, DC**. A health coach (or a client) answers a few questions. Claude then writes a personalized 7-day meal plan with full recipes that follows the client's protocols. The app shows a preview, downloads a branded PDF, and can email the plan through Zapier.
+A quiz-style web app built for two brands from one codebase:
+- **Redefining Wellness Center / Dr. Jaban Moore, DC** (`BRAND=rwc`, the default)
+- **Biohacking Bombshell** (`BRAND=bb`)
+
+ A health coach (or a client) answers a few questions. Claude then writes a personalized 7-day meal plan with full recipes that follows the client's protocols. The app shows a preview, downloads a branded PDF, and can email the plan through Zapier.
 
 - **Coach mode** (default): `https://<your-site>/`
 - **Client mode** (lead magnet): `https://<your-site>/?mode=client`. It uses warmer copy, requires an email address up front, and tags the lead `meal-plan-lead` in GoHighLevel.
 
-The design follows drjabanmoore.com: navy gradients, Poppins with Fraunces italic accents, teal highlights and orange buttons.
+Each brand gets its own Netlify site. The quiz, protocols, prompts and checks are shared; only the look and wording change:
+- **RWC** follows drjabanmoore.com: navy gradients, Poppins with Fraunces italic accents, teal highlights and orange buttons.
+- **Biohacking Bombshell** follows the BB estore: night-plum gradients, Montserrat, hot-pink pill buttons and the blue → plum → pink logo gradient.
+
+## Brands
+
+Everything brand-specific lives in `brands/<id>/`:
+
+| File | What it holds |
+|---|---|
+| `brand.json` | Names, landing and email wording, logo files, PDF colors, fonts and wording, the practice name Claude is given, and the GHL tag |
+| `brand.css` | Overrides for the design tokens in `style.css` (colors, fonts, radius) plus any brand-only touches |
+| `assets/` | `logo.png` (light backgrounds), `logo-white.png` (dark), `favicon.png`, and anything `brand.css` uses (BB's `hero.jpg`) |
+
+`scripts/build.mjs` builds the site for the brand named in the `BRAND` environment variable into `dist/`. The Netlify functions read the same variable.
 
 ---
 
 ## Setup on Netlify
 
-1. **Import the repo** into Netlify. Leave the build settings blank; `netlify.toml` already sets them.
-2. **Add two environment variables** under Site configuration → Environment variables, with scope **Functions**:
+Create one Netlify site per brand, both from this repo.
 
-   | Variable | Value |
-   |---|---|
-   | `ANTHROPIC_API_KEY` | Your Anthropic API key |
-   | `ZAPIER_WEBHOOK_URL` | Your Zapier "Catch Hook" URL (`https://hooks.zapier.com/hooks/catch/…`) |
+1. **Import the repo** into Netlify. Leave the build settings blank; `netlify.toml` already sets them.
+2. **Add the environment variables** under Site configuration → Environment variables:
+
+   | Variable | Value | Scopes |
+   |---|---|---|
+   | `BRAND` | `rwc` or `bb` (leave it unset for RWC) | **Builds and Functions** |
+   | `ANTHROPIC_API_KEY` | Your Anthropic API key | Functions |
+   | `ZAPIER_WEBHOOK_URL` | That brand's Zapier "Catch Hook" URL (`https://hooks.zapier.com/hooks/catch/…`) | Functions |
 
 3. **Redeploy**. Netlify only picks up environment variables on a new deploy.
 
@@ -27,7 +48,7 @@ Neither value ever reaches the browser. The page talks only to its own `/api/*` 
 
 - **Trigger:** Webhooks by Zapier → Catch Hook.
 - **Action:** Gmail → Send Email:
-  - **From:** support@rwc.health
+  - **From:** support@rwc.health for RWC, or Biohacking Bombshell's support address
   - **To:** `clientEmail`
   - **Subject:** `{{clientName}}'s 7-Day Meal Plan is Ready 🥗`
   - **Attachments:** map **`pdfUrl`**. Zapier downloads the PDF from that link and attaches it.
@@ -37,6 +58,7 @@ Every webhook call includes these fields:
 - the client and plan details: `clientName`, `clientEmail`, `dietProtocols`, `cookingSkill`, `cookingTime`, `servings`, `generatedDate`, `mode`
 - the PDF, twice: `pdfBase64` (a data URI) and `pdfUrl` (a private link that works for 7 days), plus `pdfFileName`
 - `ghlTag`, in client mode only
+- `brand` (`rwc` or `bb`), in case one Zap ever serves both sites
 
 ## How it works
 
@@ -84,16 +106,16 @@ Generation runs as a Netlify **background function** because three full-recipe C
 
 ```bash
 npm install
-cp .env.example .env    # then fill in ANTHROPIC_API_KEY and ZAPIER_WEBHOOK_URL
+cp .env.example .env    # then fill in ANTHROPIC_API_KEY, ZAPIER_WEBHOOK_URL and BRAND
+npm run build           # or: npm run build:bb
 npx netlify dev         # http://localhost:8888
 ```
 
-`netlify dev` runs the static site and the functions together. Opening `index.html` directly lets you click through the quiz, but generation and email need the functions.
+`netlify dev` serves `dist/` and runs the functions. Rebuild after changing any front-end file.
 
 ## Notes
 
 - jsPDF-AutoTable still loads from cdnjs as the original spec asked, but the PDF layout is drawn directly to match the site. You can remove that script tag from `index.html`.
-- Logo files: `assets/rwc-logo.png` (color), `assets/rwc-logo-white.png` (for navy backgrounds), `assets/rwc-mark.png` (favicon).
-- `GET /api/health` reports whether `ANTHROPIC_API_KEY` works and whether `ZAPIER_WEBHOOK_URL` is set (status words only, no secrets).
+- `GET /api/health` reports the site's brand and whether `ANTHROPIC_API_KEY` works and whether `ZAPIER_WEBHOOK_URL` is set (status words only, no secrets).
 - The disclaimer on the last PDF page is in `pdf.js` (`drawNotes`); have it reviewed.
-- Fonts are © their authors and used under the SIL Open Font License (`assets/fonts/OFL-*.txt`).
+- Fonts (Poppins, Fraunces, Montserrat) are © their authors and used under the SIL Open Font License (`assets/fonts/OFL-*.txt`).

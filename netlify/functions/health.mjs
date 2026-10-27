@@ -1,12 +1,13 @@
-// RWC Meal Plan Generator — configuration check
+// Meal Plan Generator — configuration check
 //
-// GET /api/health → { anthropicKey, zapierWebhook, model }
+// GET /api/health → { brand, anthropicKey, zapierWebhook, model }
 //   anthropicKey:  'ok' | 'missing' | 'rejected' | 'error'  (checked with a free model lookup)
 //   zapierWebhook: 'set' | 'missing' | 'invalid'            (format only — never fires the Zap)
 // Reports status words only; no secret values are ever returned.
 
 import Anthropic from '@anthropic-ai/sdk';
 import { MODEL } from '../lib/meal-plan.mjs';
+import { currentBrand } from '../lib/brand.mjs';
 
 export default async () => {
   const apiKey = Netlify.env.get('ANTHROPIC_API_KEY');
@@ -26,7 +27,7 @@ export default async () => {
   const webhook = Netlify.env.get('ZAPIER_WEBHOOK_URL');
   const zapierWebhook = !webhook ? 'missing' : /^https:\/\/hooks\.zapier\.com\/hooks\/catch\//.test(webhook) ? 'set' : 'invalid';
 
-  return Response.json({ anthropicKey, zapierWebhook, model: MODEL }, { headers: { 'Cache-Control': 'no-store' } });
+  return Response.json({ brand: currentBrand().id, anthropicKey, zapierWebhook, model: MODEL }, { headers: { 'Cache-Control': 'no-store' } });
 };
 
 export const config = {

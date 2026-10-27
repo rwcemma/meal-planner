@@ -1,6 +1,7 @@
 /* ==========================================================================
-   RWC Meal Plan Generator — Design System
-   Redefining Wellness Center / Dr. Jaban Moore, DC
+   Meal Plan Generator — Design System
+   The tokens below are the Redefining Wellness Center (drjabanmoore.com) defaults;
+   each brand's brands/<id>/brand.css overrides them.
    ========================================================================== */
 
 /* ---------- Tokens ---------- */
@@ -24,11 +25,11 @@
   --white:       #ffffff;
   --text:        #0d1440;
   --muted:       #2a3a6e;
-  --border:      rgba(13, 20, 64, 0.12);
+  --border:      rgba(var(--ink-rgb), 0.12);
   --red:         #ef4444;
   --red-light:   #fef2f2;
   --grad:        linear-gradient(135deg, #040e68 0%, #0a1fa8 40%, #051575 100%);
-  --pinstripe:   repeating-linear-gradient(-45deg, rgba(0, 196, 204, 0.06) 0 1px, transparent 1px 40px);
+  --pinstripe:   repeating-linear-gradient(-45deg, rgba(var(--accent-rgb), 0.06) 0 1px, transparent 1px 40px);
   --teal-strip:  linear-gradient(120deg, #5fe3e8 0%, #00c4cc 55%, #04979e 100%);
 
   --selected-bg: #f0f8ff;
@@ -36,13 +37,21 @@
   --success:     #0f8a5f;
   --success-bg:  #ecfdf5;
 
+  --font-body:   'Poppins', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
   --font-accent: 'Fraunces', Georgia, serif;
+
+  /* RGB triplets for translucent tints: rgba(var(--accent-rgb), 0.3) */
+  --accent-rgb:  0, 196, 204;
+  --ink-rgb:     13, 20, 64;
+  --shadow-rgb:  0, 33, 91;
+  --cta-rgb:     255, 141, 40;
+  --cta-hover-text: #0d1440;
 
   --radius-card: 16px;
   --radius-btn:  10px;
   --radius-pill: 50px;
-  --shadow-card: 0 6px 20px rgba(0, 33, 91, 0.06);
-  --shadow-hover: 0 14px 34px rgba(0, 33, 91, 0.10);
+  --shadow-card: 0 6px 20px rgba(var(--shadow-rgb), 0.06);
+  --shadow-hover: 0 14px 34px rgba(var(--shadow-rgb), 0.10);
 
   --header-h: 68px;
   --progress-h: 4px;
@@ -51,7 +60,7 @@
 
   --t-fast: 0.2s ease;
   --t-slide: 250ms ease;
-  --focus: 0 0 0 3px rgba(0, 196, 204, 0.45);
+  --focus: 0 0 0 3px rgba(var(--accent-rgb), 0.45);
 }
 
 /* ---------- Reset / base ---------- */
@@ -66,7 +75,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-family: var(--font-body);
   font-weight: 400;
   font-size: 18px;
   line-height: 1.55;
@@ -283,7 +292,7 @@ button { cursor: pointer; }
   min-height: 48px;
   padding: 14px 32px;
   border-radius: var(--radius-btn);
-  font-family: 'Poppins', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -297,15 +306,15 @@ button { cursor: pointer; }
   background: var(--orange);
   color: var(--white);
   border: none;
-  box-shadow: 0 6px 18px rgba(255, 141, 40, 0.28);
+  box-shadow: 0 6px 18px rgba(var(--cta-rgb), 0.28);
 }
-.btn--primary:hover:not(:disabled) { background: var(--orange2); color: var(--ink); transform: translateY(-1px); box-shadow: 0 10px 24px rgba(255, 141, 40, 0.32); }
+.btn--primary:hover:not(:disabled) { background: var(--orange2); color: var(--cta-hover-text); transform: translateY(-1px); box-shadow: 0 10px 24px rgba(var(--cta-rgb), 0.32); }
 .btn--primary:active:not(:disabled) { transform: translateY(0); }
 
 .btn--ghost {
   background: var(--white);
   color: var(--ink);
-  border: 1.5px solid rgba(13, 20, 64, 0.25);
+  border: 1.5px solid rgba(var(--ink-rgb), 0.25);
 }
 .btn--ghost:hover:not(:disabled) { border-color: var(--accent); background: var(--selected-bg); }
 
@@ -632,7 +641,7 @@ button { cursor: pointer; }
   flex-direction: column;
   gap: 10px;
   background: var(--cream);
-  border: 1px solid rgba(0, 196, 204, 0.35);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
   border-radius: var(--radius-card);
 }
 .instructions__step { display: flex; gap: 12px; align-items: flex-start; margin: 0; font-size: 16px; color: var(--ink2); }
@@ -727,7 +736,7 @@ select.input {
   justify-content: center;
   min-height: 48px;
   padding: 8px 18px;
-  border: 1.5px solid rgba(13, 20, 64, 0.18);
+  border: 1.5px solid rgba(var(--ink-rgb), 0.18);
   border-radius: var(--radius-btn);
   background: var(--white);
   color: var(--ink);
@@ -775,7 +784,7 @@ select.input {
   padding: 12px 14px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(0, 196, 204, 0.35);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
 }
 .macro-box__label { font-size: 14px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
 .macro-box__value { font-size: 28px; font-weight: 800; color: var(--white); line-height: 1.1; }
@@ -806,7 +815,7 @@ select.input {
   margin-bottom: 16px;
   border-radius: var(--radius-card);
   background: var(--cream);
-  border: 1px solid rgba(0, 196, 204, 0.35);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
 }
 .macro-bar__targets { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
 .macro-bar__targets .eyebrow { color: var(--teal-dark); font-size: 14px; }
@@ -827,7 +836,7 @@ select.input {
   font-size: 14px;
   font-weight: 700;
 }
-.target-delta--ok { background: rgba(0, 196, 204, 0.22); color: var(--accent); }
+.target-delta--ok { background: rgba(var(--accent-rgb), 0.22); color: var(--accent); }
 
 /* ==========================================================================
    Screen 7 — Food restriction categories + chips
@@ -1078,8 +1087,8 @@ select.input {
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(0, 196, 204, 0.45); }
-  50%      { transform: scale(1.06); box-shadow: 0 0 0 18px rgba(0, 196, 204, 0); }
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.45); }
+  50%      { transform: scale(1.06); box-shadow: 0 0 0 18px rgba(var(--accent-rgb), 0); }
 }
 
 .gen__title { font-size: 32px; font-weight: 800; margin-bottom: 10px; }
@@ -1198,7 +1207,7 @@ select.input {
   border-radius: var(--radius-card);
 }
 .summary-bar__name { font-size: 20px; font-weight: 700; margin-right: 6px; }
-.summary-bar .pill { background: rgba(255, 255, 255, 0.06); color: var(--white); border-color: rgba(0, 196, 204, 0.4); }
+.summary-bar .pill { background: rgba(255, 255, 255, 0.06); color: var(--white); border-color: rgba(var(--accent-rgb), 0.4); white-space: normal; max-width: 100%; }
 
 /* Pills */
 .pill {
@@ -1215,7 +1224,7 @@ select.input {
   line-height: 1.4;
   white-space: nowrap;
 }
-.pill--teal { background: var(--selected-bg); color: var(--ink2); border-color: rgba(0, 196, 204, 0.35); }
+.pill--teal { background: var(--selected-bg); color: var(--ink2); border-color: rgba(var(--accent-rgb), 0.35); }
 
 /* Toolbar: servings control */
 .preview-toolbar {
@@ -1247,7 +1256,7 @@ select.input {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 1.5px solid rgba(13, 20, 64, 0.25);
+  border: 1.5px solid rgba(var(--ink-rgb), 0.25);
   background: var(--white);
   color: var(--ink);
   font-size: 22px;
@@ -1346,7 +1355,7 @@ select.input {
   border-radius: var(--radius-pill);
   background: var(--selected-bg);
   color: var(--ink2);
-  border: 1px solid rgba(0, 196, 204, 0.3);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
   font-size: 14px;
   font-weight: 600;
 }

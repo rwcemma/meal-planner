@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — server-side plan generation
+// Meal Plan Generator — server-side plan generation
 //
 // Builds the prompts from validated quiz answers, makes the 3 sequential Claude
 // calls (Mon–Thu, Fri–Sun, grocery list + notes), repairs/parses the JSON, and
@@ -9,6 +9,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import foods from '../../data/foods.js';
 import protocols from '../../data/protocols.js';
 import { buildMatchers, findViolations } from './compliance.mjs';
+import { currentBrand } from './brand.mjs';
 
 const { getAllFoodNames, FOOD_CATEGORIES } = foods;
 const { getProtocol, getIncompatiblePairs, getProtocolAvoids } = protocols;
@@ -136,7 +137,7 @@ export function validateInput(raw) {
 /* ==========================================================================
    Prompts
    ========================================================================== */
-const SYSTEM_PROMPT = `You are the clinical meal-planning assistant for Redefining Wellness Center (Dr. Jaban Moore, DC). You write meal plans for chronically ill, highly sensitive clients on strict elimination protocols.
+const systemPrompt = () => `You are the clinical meal-planning assistant for ${currentBrand().server.practice}. You write meal plans for chronically ill, highly sensitive clients on strict elimination protocols.
 
 Protocol adherence is non-negotiable:
 - Never include an ingredient that ANY selected protocol excludes, or that the client has personally restricted — including in seasonings, cooking fats, sauces, broths, garnishes, toppings, and "optional" add-ins.
@@ -376,7 +377,7 @@ async function callClaude(prompt, label) {
     const stream = getClient().messages.stream({
       model: MODEL,
       max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt(),
       messages: [{ role: 'user', content: prompt }]
     });
     message = await stream.finalMessage();

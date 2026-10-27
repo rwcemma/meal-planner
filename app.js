@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — quiz state machine, navigation, screen rendering
+// Meal Plan Generator — quiz state machine, navigation, screen rendering
 
 /* ==========================================================================
    Mode + state
@@ -6,7 +6,7 @@
 const params = new URLSearchParams(window.location.search);
 const mode = params.get('mode') === 'client' ? 'client' : 'coach';
 
-const STORAGE_KEY = 'rwc-meal-planner-state';
+const STORAGE_KEY = BRAND.storageKey;
 
 function initialState() {
   return {
@@ -198,9 +198,9 @@ const SCREENS = [
     render: () => `
       <div class="hero">
         <div class="hero__content">
-          <img src="assets/rwc-logo-white.png" alt="Redefining Wellness Centers" class="hero__logo" width="200" height="72" />
-          <p class="eyebrow hero__eyebrow">Redefining Wellness Center</p>
-          <h1 class="hero__title" tabindex="-1">Your personalized meal plan <span class="accent">starts here.</span></h1>
+          <img src="${BRAND.logos.hero}" alt="${esc(BRAND.logoAlt)}" class="hero__logo" width="${BRAND.logos.heroWidth}" height="${Math.round(BRAND.logos.heroWidth * BRAND.logos.ratio)}" />
+          <p class="eyebrow hero__eyebrow">${esc(BRAND.heroEyebrow)}</p>
+          <h1 class="hero__title" tabindex="-1">${esc(BRAND.heroTitle)}<span class="accent">${esc(BRAND.heroAccent)}</span></h1>
           <p class="hero__sub">${copy().heroSub}</p>
           <button type="button" class="btn btn--primary btn--lg" data-action="continue">Get Started →</button>
           <p class="hero__note">Takes about 2 minutes</p>
@@ -230,7 +230,7 @@ const SCREENS = [
                    value="${esc(state.clientEmail)}" aria-describedby="emailError" required />
             <p class="field__error" id="emailError" aria-live="polite"></p>
             ${state.mode === 'client'
-              ? '<p class="field__hint">We\'ll email your plan here and may follow up with helpful resources from Redefining Wellness Center. Unsubscribe anytime.</p>'
+              ? `<p class="field__hint">${esc(BRAND.emailConsent)}</p>`
               : ''}
           </div>
           <div class="screen-actions">
@@ -1280,7 +1280,7 @@ function updateChrome() {
   $('#progressFill').style.width = `${progress}%`;
   $('#progress').setAttribute('aria-valuenow', Math.round(progress));
 
-  document.title = screen.title ? `${screen.title} · RWC Meal Plan Generator` : 'RWC Meal Plan Generator';
+  document.title = screen.title ? `${screen.title} · ${BRAND.appName}` : BRAND.appName;
 }
 
 function goToScreen(n, direction = 'forward', { force = false } = {}) {

@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — generation job records (Netlify Blobs)
+// Meal Plan Generator — generation job records (Netlify Blobs)
 //
 // A job record holds progress and, once finished, the plan itself. It contains no
 // client name or email, and it's deleted as soon as the browser collects the result.

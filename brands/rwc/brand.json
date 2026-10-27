@@ -1,0 +1,76 @@
+{
+  "id": "rwc",
+  "appName": "RWC Meal Plan Generator",
+  "orgName": "Redefining Wellness Center",
+  "logoAlt": "Redefining Wellness Centers",
+  "metaDescription": "Personalized 7-day meal plans from Redefining Wellness Center — Dr. Jaban Moore, DC.",
+  "storageKey": "rwc-meal-planner-state",
+  "googleFonts": "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,900&family=Poppins:wght@300;400;600;700;800&display=swap",
+
+  "heroEyebrow": "Redefining Wellness Center",
+  "heroTitle": "Your personalized meal plan ",
+  "heroAccent": "starts here.",
+  "emailConsent": "We'll email your plan here and may follow up with helpful resources from Redefining Wellness Center. Unsubscribe anytime.",
+
+  "logos": {
+    "header": "brand/logo.png",
+    "hero": "brand/logo-white.png",
+    "pdfColor": "brand/logo.png",
+    "pdfWhite": "brand/logo-white.png",
+    "favicon": "brand/favicon.png",
+    "ratio": 0.358889,
+    "headerWidth": 112,
+    "heroWidth": 200
+  },
+
+  "pdf": {
+    "author": "Redefining Wellness Center — Dr. Jaban Moore, DC",
+    "signature": "Dr. Jaban Moore, DC  ·  drjabanmoore.com",
+    "coverEyebrow": "Redefining Wellness Center",
+    "coverTagline": "Your nutrition, personalized to heal from the root.",
+    "ctaHeadline": "Questions? ",
+    "ctaAccent": "Contact your health coach.",
+    "ctaBody": "Your coach can adjust this plan as your body heals and your protocol changes.",
+    "ctaLabel": "drjabanmoore.com",
+    "ctaUrl": "https://drjabanmoore.com",
+    "fonts": {
+      "Body-Light": "Poppins_300Light.ttf",
+      "Body": "Poppins_400Regular.ttf",
+      "Body-SemiBold": "Poppins_600SemiBold.ttf",
+      "Body-Bold": "Poppins_700Bold.ttf",
+      "Heading": "Poppins_800ExtraBold.ttf",
+      "Accent": "Fraunces_900Black_Italic.ttf"
+    },
+    "accentFallback": ["times", "bolditalic"],
+    "colors": {
+      "dark": "#040e68",
+      "darkBright": "#0a1fa8",
+      "darkDeep": "#051575",
+      "ink": "#0d1440",
+      "ink2": "#2a3a6e",
+      "muted": "#7a8ab0",
+      "onDarkMuted": "#9aa3cf",
+      "accent": "#00c4cc",
+      "accentOnDark": "#00c4cc",
+      "accentDeep": "#04979e",
+      "accentLight": "#5fe3e8",
+      "accentBorder": "#ccf3f5",
+      "stripeLine": "rgba(0, 196, 204, 0.07)",
+      "pillFill": "#101a72",
+      "pillBorder": "#0b4f96",
+      "coverRule": "#1b2a8a",
+      "cta": "#ff8d28",
+      "ctaText": "#ffffff",
+      "cream": "#f0f8ff",
+      "border": "#e7e8ec",
+      "red": "#ef4444",
+      "redLight": "#fef2f2",
+      "white": "#ffffff"
+    }
+  },
+
+  "server": {
+    "practice": "Redefining Wellness Center (Dr. Jaban Moore, DC)",
+    "ghlTag": "meal-plan-lead"
+  }
+}

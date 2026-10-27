@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — email delivery (validation + Zapier hand-off)
+// Meal Plan Generator — email delivery (validation + Zapier hand-off)
 //
 // The browser posts the finished plan here; this module validates it, stores the PDF
 // for the Zap to attach (by URL), and forwards the payload to the Zapier webhook.
@@ -6,10 +6,12 @@
 
 import { getStore } from '@netlify/blobs';
 import protocols from '../../data/protocols.js';
+import { currentBrand } from './brand.mjs';
 
 const { getProtocol } = protocols;
 
-export const GHL_LEAD_TAG = 'meal-plan-lead';
+// GoHighLevel tag for client-mode leads, per brand (brands/<id>/brand.json → server.ghlTag)
+export const ghlLeadTag = () => currentBrand().server.ghlTag;
 const PDF_PREFIX = 'data:application/pdf;base64,';
 const MAX_PDF_CHARS = 5 * 1024 * 1024;           // ~3.7 MB PDF — plans are typically ~400 KB
 export const PDF_TTL_MS = 7 * 24 * 60 * 60 * 1000; // stored PDFs expire after 7 days

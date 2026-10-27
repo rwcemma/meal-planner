@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — food restriction library
+// Meal Plan Generator — food restriction library
 //
 // Each category: { icon, name, subgroups, items }
 //   - subgroups: null, or an array of { name, items } for subcategorized categories

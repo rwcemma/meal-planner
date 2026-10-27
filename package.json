@@ -1,8 +1,10 @@
 {
   "name": "rwc-meal-planner",
   "private": true,
-  "description": "RWC Meal Plan Generator — Redefining Wellness Center",
+  "description": "Meal Plan Generator \u2014 Redefining Wellness Center and Biohacking Bombshell",
   "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:bb": "BRAND=bb node scripts/build.mjs",
     "dev": "netlify dev"
   },
   "dependencies": {

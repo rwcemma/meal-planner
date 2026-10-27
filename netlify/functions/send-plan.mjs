@@ -1,12 +1,13 @@
-// RWC Meal Plan Generator — emails a plan via the Zapier webhook
+// Meal Plan Generator — emails a plan via the Zapier webhook
 //
 // POST /api/send-plan  { clientName, clientEmail, dietProtocols, cookingSkill, cookingTime,
 //                        servings, generatedDate, pdfBase64, mode }
 // → 200 { success: true } | 4xx/5xx { error }
 // The GHL tag is decided here from `mode` (never trusted from the browser).
 
+import { currentBrand } from '../lib/brand.mjs';
 import {
-  validatePayload, storePdf, forwardToZapier, deleteExpiredPdfs, PayloadError, GHL_LEAD_TAG
+  validatePayload, storePdf, forwardToZapier, deleteExpiredPdfs, PayloadError, ghlLeadTag
 } from '../lib/send-plan.mjs';
 
 const json = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -42,7 +43,8 @@ export default async (req, context) => {
       pdfUrl,                       // same PDF as a link — easiest to attach in a Zap
       pdfFileName: plan.pdfFileName,
       mode: plan.mode,
-      ...(plan.mode === 'client' ? { ghlTag: GHL_LEAD_TAG } : {})
+      brand: currentBrand().id,     // rwc | bb — lets one Zap serve both sites if needed
+      ...(plan.mode === 'client' ? { ghlTag: ghlLeadTag() } : {})
     });
   } catch (err) {
     console.error('[send-plan]', err);

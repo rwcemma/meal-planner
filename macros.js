@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — optional daily macro targets
+// Meal Plan Generator — optional daily macro targets
 //
 // Works like calculator.net's macro calculator: Mifflin-St Jeor BMR × activity level,
 // adjusted for the goal, then split into protein / fat / carbs by a macro style.

@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — diet protocol metadata
+// Meal Plan Generator — diet protocol metadata
 //
 // Each protocol: { name, icon, description, rules, note? }
 //   - name / icon / description: shown on the Screen 3 cards (exactly per spec)

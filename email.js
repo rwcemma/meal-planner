@@ -1,4 +1,4 @@
-// RWC Meal Plan Generator — email delivery (browser side)
+// Meal Plan Generator — email delivery (browser side)
 //
 // The Zapier webhook URL is kept server-side (ZAPIER_WEBHOOK_URL in Netlify), so it
 // can't be copied from the page and used to send email from support@rwc.health.
