@@ -6,6 +6,7 @@
 // The GHL tag is decided here from `mode` (never trusted from the browser).
 
 import { currentBrand } from '../lib/brand.mjs';
+import { readEnv } from '../lib/env.mjs';
 import {
   validatePayload, storePdf, forwardToZapier, deleteExpiredPdfs, PayloadError, ghlLeadTag
 } from '../lib/send-plan.mjs';
@@ -13,7 +14,7 @@ import {
 const json = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
 
 export default async (req, context) => {
-  const webhookUrl = Netlify.env.get('ZAPIER_WEBHOOK_URL');
+  const webhookUrl = readEnv('ZAPIER_WEBHOOK_URL');
   if (!webhookUrl || !/^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)[:/])/.test(webhookUrl)) {
     return json({ error: "Email isn't set up yet — add ZAPIER_WEBHOOK_URL in Netlify and redeploy." }, 500);
   }

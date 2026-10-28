@@ -10,6 +10,7 @@ import foods from '../../data/foods.js';
 import protocols from '../../data/protocols.js';
 import { buildMatchers, findViolations } from './compliance.mjs';
 import { currentBrand } from './brand.mjs';
+import { readEnv } from './env.mjs';
 
 const { getAllFoodNames, FOOD_CATEGORIES } = foods;
 const { getProtocol, getIncompatiblePairs, getProtocolAvoids } = protocols;
@@ -366,7 +367,7 @@ export function repairJson(raw) {
    ========================================================================== */
 let client;
 function getClient() {
-  const apiKey = globalThis.Netlify?.env.get('ANTHROPIC_API_KEY') ?? process.env.ANTHROPIC_API_KEY;
+  const apiKey = readEnv('ANTHROPIC_API_KEY');
   if (!apiKey) throw new Error('The server is missing its ANTHROPIC_API_KEY. Add it in Netlify → Site configuration → Environment variables, then redeploy.');
   client ??= new Anthropic({ apiKey });
   return client;
