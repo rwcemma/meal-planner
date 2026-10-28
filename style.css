@@ -410,6 +410,25 @@ button { cursor: pointer; }
   margin-top: 18px;
 }
 
+/* Optional author byline (brand.json → heroByline) */
+.hero__byline {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin: -12px auto 32px;
+  text-align: left;
+}
+.hero__byline-photo {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--light-aqua);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.18);
+}
+.hero__byline-name { font-size: 16px; font-weight: 700; color: var(--white); }
+.hero__byline-role { font-size: 14px; opacity: 0.75; }
+
 .hero .btn--primary { box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25); }
 
 /* ==========================================================================

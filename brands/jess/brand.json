@@ -1,0 +1,85 @@
+{
+  "id": "jess",
+  "appName": "Dr. Jess Meal Plan Generator",
+  "orgName": "Dr. Jess",
+  "logoAlt": "Dr. Jess",
+  "metaDescription": "Personalized 7-day meal plans built around your protocol, from Dr. Jess.",
+  "storageKey": "drjess-meal-planner-state",
+  "googleFonts": "https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap",
+
+  "heroEyebrow": "Root Cause Nutrition",
+  "heroTitle": "Your personalized meal plan ",
+  "heroAccent": "starts here.",
+  "heroByline": {
+    "photo": "brand/headshot.jpg",
+    "name": "Dr. Jessica Peatross, MD",
+    "role": "Functional medicine · Former internal medicine hospitalist"
+  },
+  "emailConsent": "We'll email your plan here and may follow up with helpful resources from Dr. Jess. Unsubscribe anytime.",
+
+  "logos": {
+    "header": "brand/logo.png",
+    "hero": "brand/logo-white.png",
+    "pdfColor": "brand/logo.png",
+    "pdfWhite": "brand/logo-white.png",
+    "favicon": "brand/favicon.png",
+    "ratio": 0.554295,
+    "headerWidth": 72,
+    "heroWidth": 150,
+    "pdfCoverWidth": 150
+  },
+
+  "pdf": {
+    "author": "Dr. Jessica Peatross, MD",
+    "signature": "Dr. Jess  ·  drjess.health",
+    "coverEyebrow": "Root Cause Nutrition",
+    "coverTagline": "Your body is trying to tell you something.",
+    "ctaHeadline": "Questions? ",
+    "ctaAccent": "Reach out to Dr. Jess's team.",
+    "ctaBody": "Your plan can change as your body heals and your protocol changes — we're here when you're ready.",
+    "ctaLabel": "drjess.health",
+    "ctaUrl": "https://drjess.health/",
+    "disclaimer": "This meal plan was generated with AI assistance from the protocols and food restrictions selected for you. It is educational and does not replace individualized medical advice from Dr. Jessica Peatross, MD or your own provider. Always read ingredient labels, and talk with Dr. Jess's team or your provider before making changes to your diet, supplements, or medications.",
+    "fonts": {
+      "Body-Light": "Montserrat_300Light.ttf",
+      "Body": "Montserrat_400Regular.ttf",
+      "Body-SemiBold": "Montserrat_600SemiBold.ttf",
+      "Body-Bold": "Montserrat_700Bold.ttf",
+      "Heading": "Montserrat_800ExtraBold.ttf",
+      "Accent": "Montserrat_800ExtraBold.ttf"
+    },
+    "accentFallback": ["helvetica", "bold"],
+    "colors": {
+      "dark": "#1E3D45",
+      "darkBright": "#1D4E5F",
+      "darkDeep": "#1E3D45",
+      "ink": "#1E3D45",
+      "ink2": "#1E3D45",
+      "muted": "#6B8A8F",
+      "onDarkMuted": "#B8DDD3",
+      "accent": "#C06B50",
+      "accentOnDark": "#C06B50",
+      "accentDeep": "#1D4E5F",
+      "accentLight": "#B8DDD3",
+      "accentBorder": "#B8DDD3",
+      "strip": ["#4A6B5A", "#1D4E5F", "#1E3D45"],
+      "stripeLine": "rgba(184, 221, 211, 0.06)",
+      "pillFill": "#1D4E5F",
+      "pillBorder": "#4A6B5A",
+      "coverRule": "#4A6B5A",
+      "cta": "#C06B50",
+      "ctaText": "#FFFFFF",
+      "cream": "#F7F7F5",
+      "border": "#E3E7E8",
+      "red": "#ef4444",
+      "redLight": "#fef2f2",
+      "white": "#FFFFFF"
+    }
+  },
+
+  "server": {
+    "practice": "Dr. Jess (Dr. Jessica Peatross, MD), a functional medicine practice",
+    "ghlTag": "drjess-meal-plan",
+    "conversionFunnel": "Lead Magnet - Meal Plan"
+  }
+}

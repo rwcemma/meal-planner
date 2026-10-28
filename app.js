@@ -5,6 +5,8 @@
    ========================================================================== */
 const params = new URLSearchParams(window.location.search);
 const mode = params.get('mode') === 'client' ? 'client' : 'coach';
+// Attribution passed through to the CRM, e.g. ?lead_source=instagram or ?utm_source=instagram
+const leadSource = (params.get('lead_source') || params.get('utm_source') || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
 
 const STORAGE_KEY = BRAND.storageKey;
 
@@ -202,6 +204,14 @@ const SCREENS = [
           <p class="eyebrow hero__eyebrow">${esc(BRAND.heroEyebrow)}</p>
           <h1 class="hero__title" tabindex="-1">${esc(BRAND.heroTitle)}<span class="accent">${esc(BRAND.heroAccent)}</span></h1>
           <p class="hero__sub">${copy().heroSub}</p>
+          ${BRAND.heroByline ? `
+          <div class="hero__byline">
+            <img src="${BRAND.heroByline.photo}" alt="" class="hero__byline-photo" width="48" height="48" />
+            <div>
+              <p class="hero__byline-name">${esc(BRAND.heroByline.name)}</p>
+              <p class="hero__byline-role">${esc(BRAND.heroByline.role)}</p>
+            </div>
+          </div>` : ''}
           <button type="button" class="btn btn--primary btn--lg" data-action="continue">Get Started →</button>
           <p class="hero__note">Takes about 2 minutes</p>
         </div>
@@ -1214,7 +1224,8 @@ function bindResults(el) {
         servings: state.servings,
         generatedDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         pdfBase64,
-        mode: state.mode
+        mode: state.mode,
+        leadSource
       });
       state.planDelivered = true;
       saveState();

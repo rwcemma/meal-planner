@@ -43,7 +43,9 @@ export default async (req, context) => {
       pdfUrl,                       // same PDF as a link — easiest to attach in a Zap
       pdfFileName: plan.pdfFileName,
       mode: plan.mode,
-      brand: currentBrand().id,     // rwc | bb — lets one Zap serve both sites if needed
+      brand: currentBrand().id,     // rwc | bb | jess — lets one Zap serve several sites if needed
+      leadSource: plan.leadSource,  // from ?lead_source= / ?utm_source=, '' if none
+      conversionFunnel: currentBrand().server.conversionFunnel || '',
       ...(plan.mode === 'client' ? { ghlTag: ghlLeadTag() } : {})
     });
   } catch (err) {

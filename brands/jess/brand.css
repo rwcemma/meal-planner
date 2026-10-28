@@ -1,0 +1,87 @@
+/* ==========================================================================
+   Dr. Jess — overrides for the shared design system (style.css)
+   From the Dr. Jess brand kit (dr-jess-guide-builder): Montserrat only,
+   teal primary actions, terra accents and "book" actions, midnight dark panels,
+   sage secondary accents, mint/sky for fills only (never text).
+   ========================================================================== */
+:root {
+  /* Brand kit tokens */
+  --jess-teal:     #1D4E5F;
+  --jess-midnight: #1E3D45;
+  --jess-sage:     #4A6B5A;
+  --jess-terra:    #C06B50;
+  --jess-sky:      #ADD8E6;
+  --jess-mint:     #B8DDD3;
+  --jess-cream:    #F7F7F5;
+  --jess-bg:       #F4F2EE;
+  --jess-muted:    #6B8A8F;
+
+  /* Shared design-system tokens mapped onto the kit */
+  --navy:        var(--jess-midnight);
+  --navy-bright: var(--jess-teal);
+  --ink:         var(--jess-midnight);
+  --ink2:        var(--jess-midnight);
+  --muted-soft:  var(--jess-muted);
+  --accent:      var(--jess-terra);   /* eyebrows, accent words */
+  --orange:      var(--jess-teal);    /* primary buttons */
+  --orange2:     var(--jess-midnight);
+  --cta-hover-text: #FFFFFF;
+  --cream:       var(--jess-cream);
+
+  --teal:        var(--jess-teal);    /* selected states, checkmarks, links */
+  --teal-dark:   var(--jess-teal);
+  --aqua:        var(--jess-sage);
+  --light-aqua:  var(--jess-mint);
+  --bg:          var(--jess-bg);
+  --text:        var(--jess-midnight);
+  --muted:       var(--jess-midnight);
+  --selected-bg: rgba(184, 221, 211, 0.28);
+  --border:      rgba(30, 61, 69, 0.12);
+
+  --accent-rgb:  29, 78, 95;
+  --ink-rgb:     30, 61, 69;
+  --shadow-rgb:  30, 61, 69;
+  --cta-rgb:     29, 78, 95;
+
+  --grad:        linear-gradient(135deg, #1E3D45 0%, #1D4E5F 60%, #4A6B5A 100%);
+  --pinstripe:   repeating-linear-gradient(-45deg, rgba(184, 221, 211, 0.05) 0 1px, transparent 1px 40px);
+  --teal-strip:  linear-gradient(120deg, #4A6B5A 0%, #1D4E5F 100%);
+
+  --font-body:   'Montserrat', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  --font-accent: 'Montserrat', system-ui, sans-serif;
+
+  --radius-card: 16px;
+  --radius-btn:  50px;
+  --focus: 0 0 0 3px rgba(29, 78, 95, 0.30);
+}
+
+/* Shell background (the kit's GHL-safe page color) */
+html, body { background: var(--jess-bg); }
+
+body { line-height: 1.7; }
+h1, h2, h3, h4 { font-weight: 700; letter-spacing: -0.01em; line-height: 1.15; }
+
+/* Montserrat is the only typeface — accent words are color, not a second font */
+.accent { font-style: normal; font-weight: 800; letter-spacing: -0.01em; }
+.eyebrow { font-weight: 700; letter-spacing: 0.16em; }
+
+/* Buttons: Montserrat 700, 0.04em tracking; terra on dark panels so they stand out */
+.btn { letter-spacing: 0.04em; }
+.hero .btn--primary,
+.macro-result .btn--primary {
+  background: linear-gradient(135deg, #C06B50 0%, #a95a42 100%);
+  box-shadow: 0 10px 28px rgba(192, 107, 80, 0.35);
+}
+.hero .btn--primary:hover:not(:disabled),
+.macro-result .btn--primary:hover:not(:disabled) { background: #C06B50; filter: brightness(1.06); }
+
+/* Landing */
+.hero__title { font-weight: 800; letter-spacing: -0.01em; }
+.hero__sub { opacity: 0.85; }
+.hero__byline-photo { border-color: var(--jess-mint); box-shadow: 0 0 0 4px rgba(184, 221, 211, 0.18), 0 0 18px rgba(184, 221, 211, 0.35); }
+
+/* Progress: teal fill on a mint track */
+.progress { background: rgba(184, 221, 211, 0.55); }
+
+.input::placeholder { color: var(--jess-muted); }
+.food-chip:hover { background: rgba(184, 221, 211, 0.18); }

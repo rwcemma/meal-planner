@@ -1,11 +1,12 @@
 {
   "name": "rwc-meal-planner",
   "private": true,
-  "description": "Meal Plan Generator \u2014 Redefining Wellness Center and Biohacking Bombshell",
+  "description": "Meal Plan Generator \u2014 Redefining Wellness Center, Biohacking Bombshell and Dr. Jess",
   "scripts": {
     "build": "node scripts/build.mjs",
     "build:bb": "BRAND=bb node scripts/build.mjs",
-    "dev": "netlify dev"
+    "dev": "netlify dev",
+    "build:jess": "BRAND=jess node scripts/build.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

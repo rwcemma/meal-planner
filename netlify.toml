@@ -1,5 +1,5 @@
 # One codebase, one Netlify site per brand. Set BRAND in each site's environment
-# variables (rwc = Redefining Wellness Center, bb = Biohacking Bombshell); it picks the
+# variables (rwc = Redefining Wellness Center, bb = Biohacking Bombshell, jess = Dr. Jess); it picks the
 # front end built into dist/ and the wording/GHL tag the functions use.
 [build]
   command = "node scripts/build.mjs"

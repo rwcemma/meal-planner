@@ -144,6 +144,8 @@ Protocol adherence is non-negotiable:
 - Ingredients must be allowed on every selected protocol at the same time. If you are unsure whether an ingredient is allowed, leave it out and choose something clearly compliant.
 - Never suggest substitutions that would break a rule.
 
+In any notes you write, call the people you write for "clients", never "patients".
+
 Respond ONLY with raw JSON. No markdown. No backticks. No explanation.`;
 
 // Foods the selected protocols rule out (food name → protocol names)

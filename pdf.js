@@ -285,7 +285,7 @@ function tealStripImage(w, h) {
   canvas.height = Math.max(2, Math.round(h * 2));
   const g = canvas.getContext('2d');
   g.scale(2, 2);
-  g.fillStyle = cssAngleGradient(g, w, h, 120, [[0, PDF_COLORS.accentLight], [0.55, PDF_COLORS.accent], [1, PDF_COLORS.accentDeep]]);
+  g.fillStyle = cssAngleGradient(g, w, h, 120, (PDF_COLORS.strip || [PDF_COLORS.accentLight, PDF_COLORS.accent, PDF_COLORS.accentDeep]).map((c, i) => [[0, 0.55, 1][i], c]));
   g.fillRect(0, 0, w, h);
   return { data: canvas.toDataURL('image/jpeg', 0.95), format: 'JPEG' };
 }
@@ -347,7 +347,7 @@ function drawCover(ctx) {
   ctx.image('strip', () => tealStripImage(W, 5), 0, 0, W, 5);
 
   if (ctx.logos.white) {
-    const logoW = 190;
+    const logoW = BRAND.logos.pdfCoverWidth || 190;
     doc.addImage(ctx.logos.white, 'PNG', cx - logoW / 2, 150, logoW, logoW * PDF_LOGO_RATIO, 'logo-white', 'FAST');
   }
 
@@ -710,7 +710,8 @@ function drawNotes(ctx) {
   doc.link(px + 24, btnY, btnW, 26, { url: PDF_BRAND.ctaUrl });
 
   // Disclaimer
-  const disclaimer = 'This meal plan was generated with AI assistance from the protocols and food restrictions selected for you. '
+  const disclaimer = PDF_BRAND.disclaimer
+    || 'This meal plan was generated with AI assistance from the protocols and food restrictions selected for you. '
     + 'It is educational and does not replace individualized medical advice. Always read ingredient labels, and talk with your '
     + 'health coach or provider before making changes to your diet, supplements, or medications.';
   let dy = y + panelH + 20;

@@ -57,6 +57,8 @@ export function validatePayload(raw) {
   if (pdfBytes.subarray(0, 5).toString('latin1') !== '%PDF-') throw new PayloadError('The attachment is not a PDF.');
 
   const mode = raw.mode === 'client' ? 'client' : 'coach';
+  // Where the visitor came from (?lead_source= or ?utm_source=), for GHL attribution
+  const leadSource = String(raw.leadSource ?? '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
   const generatedDate = String(raw.generatedDate ?? '').replace(/[^\w ,]/g, '').slice(0, 40)
     || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const pdfFileName = `${clientName.replace(/[^\p{L}\p{N}]+/gu, '_')}_Meal_Plan.pdf`;
@@ -69,7 +71,7 @@ export function validatePayload(raw) {
     : '';
 
   return { clientName, clientEmail, dietProtocols, cookingSkill: raw.cookingSkill, cookingTime: raw.cookingTime,
-    servings, generatedDate, pdfBase64, pdfBytes, pdfFileName, mode, macroTargets };
+    servings, generatedDate, pdfBase64, pdfBytes, pdfFileName, mode, macroTargets, leadSource };
 }
 
 // Stores the PDF under an unguessable id; returns that id
